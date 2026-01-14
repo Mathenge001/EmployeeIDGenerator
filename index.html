@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ID Generator</title>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* ===== CONTROL PANEL ===== */
+.controls {
+  width: 320px;
+  background: #1e1e1e;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.controls label {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.controls input,
+.controls select,
+.controls button {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+}
+
+.controls button {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* ===== ID CARD BASE ===== */
+.card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* CR80 @ 300 DPI */
+.id-card {
+  position: relative;
+  width: 1011px;
+  height: 638px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.id-card img.bg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== FRONT FIELDS ===== */
+.rider-id {
+  position: absolute;
+  left: 80px;
+  top: 60px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+}
+
+.name {
+  position: absolute;
+  left: 98px;
+  top: 350px;
+  font-size: 58px;
+  font-weight: bold;
+  color: #000;
+}
+
+.role {
+  position: absolute;
+  left: 120px;
+  top: 450px;
+  font-size: 30px;
+  color: #d4af37;
+}
+
+.expiry {
+  position: absolute;
+  left: 170px;
+  top: 550px;
+  font-size: 25px;
+  color: #000;
+}
+
+.photo {
+  position: absolute;
+  right: 50px;
+  top: 130px;
+  width: 320px;
+  height: 370px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+/* ===== BACK FIELDS ===== */
+.area {
+  position: absolute;
+  left: 90px;
+  top: 200px;
+  font-size: 60px;
+  font-weight: bold;
+  color: #000;
+}
+
+.qr {
+  position: absolute;
+  right: 180px;
+  top: 50px;
+  width: 200px;
+  height: 200px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== CONTROLS ===== -->
+<div class="controls">
+  <h3>ID Editor</h3>
+
+  <label for="clientSelect">Select Client</label>
+  <select id="clientSelect" onchange="updateID()">
+    <option value="MG">MGAS</option>
+    <option value="EG">EasyGas</option>
+    <option value="MTSK">Motosouk</option>
+  </select>
+
+  <label for="riderNumber">Rider Number</label>
+  <input id="riderNumber" placeholder="e.g. 1023" oninput="updateID()">
+
+  <label for="riderName">Rider Name</label>
+  <input id="riderName" placeholder="Name" oninput="updatePreview('name')">
+
+  <label for="role">Role / Position</label>
+  <input id="role" placeholder="Role" oninput="updatePreview('role')">
+
+  <label for="area">Assigned Area</label>
+  <input id="area" placeholder="Assigned Area" oninput="updatePreview('area')">
+
+  <label for="expiry">Expiry Date</label>
+  <input type="date" id="expiry" onchange="updatePreview('expiry')">
+
+  <label>Profile Photo</label>
+  <input type="file" accept="image/*" onchange="loadPhoto(event)">
+
+  <label>QR Code</label>
+  <input type="file" accept="image/*" onchange="loadQR(event)">
+
+  <button onclick="downloadPNG('frontID', 'Front')">Download Front (PNG)</button>
+  <button onclick="downloadPNG('backID', 'Back')">Download Back (PNG)</button>
+  <button onclick="downloadPDF()">Download PDF (Front + Back)</button>
+  <button onclick="nextEmployee()">Next Employee</button>
+</div>
+
+<!-- ===== ID PREVIEW ===== -->
+<div class="card-wrapper">
+
+  <!-- FRONT -->
+  <div class="id-card" id="frontID">
+    <img src="Horizontal ID.jpg" class="bg">
+
+    <div class="rider-id" id="idPreview">MTS-MG-0000</div>
+    <div class="name" id="namePreview">John Doe</div>
+    <div class="role" id="rolePreview">Authorized Gas Deliverer</div>
+    <div class="expiry" id="expiryPreview">Valid until: 31 Dec 2026</div>
+
+    <img class="photo" id="photoPreview">
+  </div>
+
+  <!-- BACK -->
+  <div class="id-card" id="backID">
+    <img src="Horizontal ID Back with QR.jpg" class="bg">
+
+    <div class="area" id="areaPreview">Nairobi</div>
+    <img class="qr" id="qrPreview">
+  </div>
+
+</div>
+
+<script>
+/* ===== IMAGE UPLOADS ===== */
+function loadPhoto(e) {
+  photoPreview.src = URL.createObjectURL(e.target.files[0]);
+}
+
+// ✅ FIXED QR UPLOAD FUNCTION
+function loadQR(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    qrPreview.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ===== UPDATE PREVIEWS ===== */
+function updatePreview(field) {
+  if (field === 'name') namePreview.innerText = document.getElementById('riderName').value || 'John Doe';
+  if (field === 'role') rolePreview.innerText = document.getElementById('role').value || 'Authorized Gas Deliverer';
+  if (field === 'area') areaPreview.innerText = document.getElementById('area').value || 'Nairobi';
+  if (field === 'expiry') {
+    const val = document.getElementById('expiry').value;
+    expiryPreview.innerText = val ? 'Valid until: ' + val : 'Valid until: 31 Dec 2026';
+  }
+}
+
+/* ===== RIDER ID LOGIC ===== */
+function updateID() {
+  const client = document.getElementById("clientSelect").value;
+  const number = document.getElementById("riderNumber").value || "0000";
+  idPreview.innerText = `MTS-${client}-${number}`;
+}
+
+/* ===== PNG DOWNLOAD ===== */
+function downloadPNG(id, side) {
+  const name = document.getElementById('riderName').value.replace(/\s+/g, "_") || "Rider";
+  const riderID = idPreview.innerText || "0000";
+
+  html2canvas(document.getElementById(id), {
+    scale: 3,
+    backgroundColor: "#ffffff",
+    useCORS: true
+  }).then(canvas => {
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png", 1.0);
+    link.download = `${name}_${riderID}_${side}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
+
+/* ===== PDF DOWNLOAD ===== */
+async function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const name = document.getElementById('riderName').value.replace(/\s+/g, "_") || "Rider";
+  const riderID = idPreview.innerText || "0000";
+
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [85.6, 54] });
+
+  const front = await html2canvas(document.getElementById("frontID"), { scale: 3, backgroundColor: "#ffffff" });
+  const back = await html2canvas(document.getElementById("backID"), { scale: 3, backgroundColor: "#ffffff" });
+
+  pdf.addImage(front.toDataURL("image/png"), "PNG", 0, 0, 85.6, 54);
+  pdf.addPage();
+  pdf.addImage(back.toDataURL("image/png"), "PNG", 0, 0, 85.6, 54);
+
+  pdf.save(`${name}_${riderID}_FullID.pdf`);
+}
+
+/* ===== NEXT EMPLOYEE ===== */
+function nextEmployee() {
+  document.getElementById('riderName').value = '';
+  document.getElementById('role').value = '';
+  document.getElementById('area').value = '';
+  document.getElementById('expiry').value = '';
+  document.getElementById('riderNumber').value = '';
+  document.getElementById('clientSelect').selectedIndex = 0;
+  photoPreview.src = '';
+  qrPreview.src = '';
+
+  updatePreview('name');
+  updatePreview('role');
+  updatePreview('area');
+  updatePreview('expiry');
+  updateID();
+}
+</script>
+
+</body>
+</html>
