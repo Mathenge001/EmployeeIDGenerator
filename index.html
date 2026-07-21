@@ -2,59 +2,103 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ID Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rider ID Generator</title>
 
-<!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body {
+:root {
+  color-scheme: dark;
   font-family: Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
   background: #111;
   color: #fff;
   display: flex;
   gap: 20px;
   padding: 20px;
+  align-items: flex-start;
 }
 
-/* ===== CONTROL PANEL ===== */
 .controls {
-  width: 320px;
+  width: 340px;
+  flex: 0 0 340px;
   background: #1e1e1e;
-  padding: 15px;
-  border-radius: 10px;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.28);
 }
 
+.controls h3 { margin: 0 0 14px; }
 .controls label {
   display: block;
-  margin-top: 10px;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #fff;
+  margin: 12px 0 6px;
+  font-weight: 700;
 }
-
 .controls input,
 .controls select,
 .controls button {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 7px;
+  border: 1px solid #444;
+  font-size: 14px;
 }
-
+.controls input,
+.controls select {
+  background: #111;
+  color: #fff;
+}
 .controls button {
+  margin-top: 10px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  border: 0;
+}
+.controls button.primary { background: #d4af37; color: #111; }
+.controls button.secondary { background: #333; color: #fff; }
+.controls button:disabled { opacity: .45; cursor: not-allowed; }
+
+.limit-box {
+  padding: 11px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  background: #171717;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.limit-box strong { color: #e5c14e; }
+.limit-box.limit-reached { border-color: #b91c1c; background: #2b1212; }
+
+.message {
+  min-height: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.message.error { color: #fca5a5; }
+.message.success { color: #86efac; }
+
+.preview-stage {
+  overflow: auto;
+  max-width: calc(100vw - 400px);
+  padding-bottom: 10px;
 }
 
-/* ===== ID CARD BASE ===== */
 .card-wrapper {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 1011px;
 }
 
-/* CR80 @ 300 DPI */
 .id-card {
   position: relative;
   width: 1011px;
@@ -62,232 +106,257 @@ body {
   background: #fff;
   overflow: hidden;
 }
+.id-card img.bg { width: 100%; height: 100%; display: block; }
 
-.id-card img.bg {
-  width: 100%;
-  height: 100%;
-}
-
-/* ===== FRONT FIELDS ===== */
+/* The photo area has been removed. Rider information now occupies the card clearly. */
 .rider-id {
   position: absolute;
-  left: 80px;
-  top: 60px;
-  font-size: 20px;
-  font-weight: bold;
-  color: #000;
+  left: 92px;
+  top: 330px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: 1px;
 }
-
 .name {
   position: absolute;
-  left: 98px;
-  top: 350px;
+  left: 92px;
+  top: 395px;
+  width: 820px;
   font-size: 58px;
-  font-weight: bold;
+  line-height: 1.05;
+  font-weight: 800;
   color: #000;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workplace {
+  position: absolute;
+  left: 92px;
+  top: 486px;
+  font-size: 31px;
+  font-weight: 700;
+  color: #a88718;
 }
 
-.role {
-  position: absolute;
-  left: 120px;
-  top: 450px;
-  font-size: 30px;
-  color: #d4af37;
-}
-
-.expiry {
-  position: absolute;
-  left: 170px;
-  top: 550px;
-  font-size: 25px;
-  color: #000;
-}
-
-.photo {
-  position: absolute;
-  right: 50px;
-  top: 130px;
-  width: 320px;
-  height: 370px;
-  object-fit: cover;
-  border-radius: 14px;
-}
-
-/* ===== BACK FIELDS ===== */
-.area {
-  position: absolute;
-  left: 90px;
-  top: 200px;
-  font-size: 60px;
-  font-weight: bold;
-  color: #000;
-}
-
-.qr {
-  position: absolute;
-  right: 180px;
-  top: 50px;
-  width: 200px;
-  height: 200px;
+@media (max-width: 900px) {
+  body { flex-direction: column; padding: 12px; }
+  .controls { width: 100%; flex-basis: auto; }
+  .preview-stage { max-width: 100%; width: 100%; }
 }
 </style>
 </head>
-
 <body>
 
-<!-- ===== CONTROLS ===== -->
 <div class="controls">
-  <h3>ID Editor</h3>
+  <h3>Rider ID Editor</h3>
 
-  <label for="clientSelect">Select Client</label>
-  <select id="clientSelect" onchange="updateID()">
-    <option value="MG">MGAS</option>
+  <div class="limit-box" id="limitBox">
+    Weekly usage: <strong><span id="usedCount">0</span>/15</strong><br>
+    Remaining this week: <strong id="remainingCount">15</strong>
+  </div>
+
+  <label for="clientSelect">Rider Workplace</label>
+  <select id="clientSelect" onchange="updatePreview()">
+    <option value="MG">M-Gas</option>
     <option value="EG">EasyGas</option>
-    <option value="MTSK">Motosouk</option>
   </select>
 
-  <label for="riderNumber">Rider Number</label>
-  <input id="riderNumber" placeholder="e.g. 1023" oninput="updateID()">
+  <label for="riderNumber">Rider ID Number</label>
+  <input id="riderNumber" placeholder="e.g. 1023" maxlength="20" oninput="updatePreview()">
 
   <label for="riderName">Rider Name</label>
-  <input id="riderName" placeholder="Name" oninput="updatePreview('name')">
+  <input id="riderName" placeholder="e.g. John Kamau" maxlength="50" oninput="updatePreview()">
 
-  <label for="role">Role / Position</label>
-  <input id="role" placeholder="Role" oninput="updatePreview('role')">
+  <button class="primary download-button" onclick="downloadPNG('frontID', 'Front')">Download Front (PNG)</button>
+  <button class="secondary download-button" onclick="downloadPNG('backID', 'Back')">Download Back (PNG)</button>
+  <button class="secondary download-button" onclick="downloadPDF()">Download PDF (Front + Back)</button>
+  <button class="secondary" onclick="nextRider()">Next Rider</button>
 
-  <label for="area">Assigned Area</label>
-  <input id="area" placeholder="Assigned Area" oninput="updatePreview('area')">
-
-  <label for="expiry">Expiry Date</label>
-  <input type="date" id="expiry" onchange="updatePreview('expiry')">
-
-  <label>Profile Photo</label>
-  <input type="file" accept="image/*" onchange="loadPhoto(event)">
-
-  <!--<label>QR Code</label>
-  <input type="file" accept="image/*" onchange="loadQR(event)">  -->
-
-  <button onclick="downloadPNG('frontID', 'Front')">Download Front (PNG)</button>
-  <button onclick="downloadPNG('backID', 'Back')">Download Back (PNG)</button>
-  <button onclick="downloadPDF()">Download PDF (Front + Back)</button>
-  <button onclick="nextEmployee()">Next Employee</button>
+  <div id="message" class="message" aria-live="polite"></div>
 </div>
 
-<!-- ===== ID PREVIEW ===== -->
-<div class="card-wrapper">
+<div class="preview-stage">
+  <div class="card-wrapper">
+    <div class="id-card" id="frontID">
+      <img src="Horizontal ID.jpg" class="bg" alt="Motosouk ID front template">
+      <div class="rider-id" id="idPreview">MTS-MG-0000</div>
+      <div class="name" id="namePreview">RIDER NAME</div>
+      <div class="workplace" id="workplacePreview">Assigned to: M-Gas</div>
+    </div>
 
-  <!-- FRONT -->
-  <div class="id-card" id="frontID">
-    <img src="Horizontal ID.jpg" class="bg">
-
-    <div class="rider-id" id="idPreview">MTS-MG-0000</div>
-    <div class="name" id="namePreview">John Doe</div>
-    <div class="role" id="rolePreview">Authorized Gas Deliverer</div>
-    <div class="expiry" id="expiryPreview">Valid until: 31 Dec 2026</div>
-
-    <img class="photo" id="photoPreview">
+    <div class="id-card" id="backID">
+      <img src="Horizontal ID Updated Back with QR.jpg" class="bg" alt="Motosouk ID back template">
+    </div>
   </div>
-
-  <!-- BACK -->
-  <div class="id-card" id="backID">
-    <img src="Horizontal ID Updated Back with QR.jpg" class="bg">
-
-    <div class="area" id="areaPreview">Nairobi</div>
-   <!-- <img class="qr" id="qrPreview">  -->
-  </div>
-
 </div>
 
 <script>
-/* ===== IMAGE UPLOADS ===== */
-function loadPhoto(e) {
-  photoPreview.src = URL.createObjectURL(e.target.files[0]);
+const WEEKLY_LIMIT = 15;
+let currentRiderCounted = false;
+
+function getWeekKey(date = new Date()) {
+  // ISO week key, using local calendar date converted safely to UTC.
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
-// ✅ FIXED QR UPLOAD FUNCTION
-function loadQR(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(event) {
-    qrPreview.src = event.target.result;
-  };
-  reader.readAsDataURL(file);
+function readUsage() {
+  const weekKey = getWeekKey();
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem('riderIdWeeklyUsage') || '{}'); } catch (_) {}
+  if (stored.weekKey !== weekKey) stored = { weekKey, count: 0 };
+  return stored;
 }
 
-/* ===== UPDATE PREVIEWS ===== */
-function updatePreview(field) {
-  if (field === 'name') namePreview.innerText = document.getElementById('riderName').value || 'John Doe';
-  if (field === 'role') rolePreview.innerText = document.getElementById('role').value || 'Authorized Gas Deliverer';
-  if (field === 'area') areaPreview.innerText = document.getElementById('area').value || 'Nairobi';
-  if (field === 'expiry') {
-    const val = document.getElementById('expiry').value;
-    expiryPreview.innerText = val ? 'Valid until: ' + val : 'Valid until: 31 Dec 2026';
-  }
+function saveUsage(usage) {
+  localStorage.setItem('riderIdWeeklyUsage', JSON.stringify(usage));
 }
 
-/* ===== RIDER ID LOGIC ===== */
-function updateID() {
-  const client = document.getElementById("clientSelect").value;
-  const number = document.getElementById("riderNumber").value || "0000";
-  idPreview.innerText = `MTS-${client}-${number}`;
-}
-
-/* ===== PNG DOWNLOAD ===== */
-function downloadPNG(id, side) {
-  const name = document.getElementById('riderName').value.replace(/\s+/g, "_") || "Rider";
-  const riderID = idPreview.innerText || "0000";
-
-  html2canvas(document.getElementById(id), {
-    scale: 3,
-    backgroundColor: "#ffffff",
-    useCORS: true
-  }).then(canvas => {
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png", 1.0);
-    link.download = `${name}_${riderID}_${side}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function updateLimitDisplay() {
+  const usage = readUsage();
+  const remaining = Math.max(0, WEEKLY_LIMIT - usage.count);
+  document.getElementById('usedCount').textContent = usage.count;
+  document.getElementById('remainingCount').textContent = remaining;
+  document.getElementById('limitBox').classList.toggle('limit-reached', remaining === 0);
+  document.querySelectorAll('.download-button').forEach(button => {
+    button.disabled = remaining === 0 && !currentRiderCounted;
   });
 }
 
-/* ===== PDF DOWNLOAD ===== */
-async function downloadPDF() {
-  const { jsPDF } = window.jspdf;
-  const name = document.getElementById('riderName').value.replace(/\s+/g, "_") || "Rider";
-  const riderID = idPreview.innerText || "0000";
-
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [85.6, 54] });
-
-  const front = await html2canvas(document.getElementById("frontID"), { scale: 3, backgroundColor: "#ffffff" });
-  const back = await html2canvas(document.getElementById("backID"), { scale: 3, backgroundColor: "#ffffff" });
-
-  pdf.addImage(front.toDataURL("image/png"), "PNG", 0, 0, 85.6, 54);
-  pdf.addPage();
-  pdf.addImage(back.toDataURL("image/png"), "PNG", 0, 0, 85.6, 54);
-
-  pdf.save(`${name}_${riderID}_FullID.pdf`);
+function setMessage(text, type = '') {
+  const element = document.getElementById('message');
+  element.textContent = text;
+  element.className = `message ${type}`.trim();
 }
 
-/* ===== NEXT EMPLOYEE ===== */
-function nextEmployee() {
+function getClientDetails() {
+  const code = document.getElementById('clientSelect').value;
+  return code === 'EG'
+    ? { code: 'EG', name: 'EasyGas' }
+    : { code: 'MG', name: 'M-Gas' };
+}
+
+function cleanRiderNumber(value) {
+  return value.trim().replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+}
+
+function updatePreview() {
+  const client = getClientDetails();
+  const number = cleanRiderNumber(document.getElementById('riderNumber').value) || '0000';
+  const name = document.getElementById('riderName').value.trim() || 'RIDER NAME';
+
+  document.getElementById('idPreview').textContent = `MTS-${client.code}-${number}`;
+  document.getElementById('namePreview').textContent = name;
+  document.getElementById('workplacePreview').textContent = `Assigned to: ${client.name}`;
+}
+
+function validateRider() {
+  const name = document.getElementById('riderName').value.trim();
+  const number = cleanRiderNumber(document.getElementById('riderNumber').value);
+  if (!name || !number) {
+    setMessage('Enter both the rider name and rider ID number before downloading.', 'error');
+    return false;
+  }
+  return true;
+}
+
+function registerCurrentRider() {
+  if (currentRiderCounted) return true;
+
+  const usage = readUsage();
+  if (usage.count >= WEEKLY_LIMIT) {
+    setMessage('The weekly limit of 15 rider IDs has been reached.', 'error');
+    updateLimitDisplay();
+    return false;
+  }
+
+  usage.count += 1;
+  saveUsage(usage);
+  currentRiderCounted = true;
+  updateLimitDisplay();
+  setMessage(`Rider ID registered. ${WEEKLY_LIMIT - usage.count} ID(s) remain this week.`, 'success');
+  return true;
+}
+
+function safeFilenamePart(value, fallback) {
+  const cleaned = value.trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+  return cleaned || fallback;
+}
+
+async function downloadPNG(id, side) {
+  if (!validateRider() || !registerCurrentRider()) return;
+
+  const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
+  const riderID = safeFilenamePart(document.getElementById('idPreview').textContent, 'ID');
+
+  try {
+    const canvas = await html2canvas(document.getElementById(id), {
+      scale: 3,
+      backgroundColor: '#ffffff',
+      useCORS: true
+    });
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.download = `${name}_${riderID}_${side}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    setMessage('The image could not be created. Please try again.', 'error');
+    console.error(error);
+  }
+}
+
+async function downloadPDF() {
+  if (!validateRider() || !registerCurrentRider()) return;
+
+  const { jsPDF } = window.jspdf;
+  const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
+  const riderID = safeFilenamePart(document.getElementById('idPreview').textContent, 'ID');
+
+  try {
+    const front = await html2canvas(document.getElementById('frontID'), {
+      scale: 3,
+      backgroundColor: '#ffffff',
+      useCORS: true
+    });
+    const back = await html2canvas(document.getElementById('backID'), {
+      scale: 3,
+      backgroundColor: '#ffffff',
+      useCORS: true
+    });
+
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85.6, 54] });
+    pdf.addImage(front.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 54);
+    pdf.addPage();
+    pdf.addImage(back.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 54);
+    pdf.save(`${name}_${riderID}_FullID.pdf`);
+  } catch (error) {
+    setMessage('The PDF could not be created. Please try again.', 'error');
+    console.error(error);
+  }
+}
+
+function nextRider() {
   document.getElementById('riderName').value = '';
-  document.getElementById('role').value = '';
-  document.getElementById('area').value = '';
-  document.getElementById('expiry').value = '';
   document.getElementById('riderNumber').value = '';
   document.getElementById('clientSelect').selectedIndex = 0;
-  photoPreview.src = '';
-  qrPreview.src = '';
-
-  updatePreview('name');
-  updatePreview('role');
-  updatePreview('area');
-  updatePreview('expiry');
-  updateID();
+  currentRiderCounted = false;
+  setMessage('');
+  updatePreview();
+  updateLimitDisplay();
+  document.getElementById('riderName').focus();
 }
-</script>
 
+updatePreview();
+updateLimitDisplay();
+</script>
 </body>
 </html>
