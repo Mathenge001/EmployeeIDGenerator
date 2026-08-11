@@ -1,0 +1,83 @@
+-- Global Rider ID weekly limit: 15 IDs across all browsers/devices.
+-- Run this entire file once in Supabase Dashboard -> SQL Editor.
+
+create table if not exists public.rider_id_weekly_usage (
+  week_start date primary key,
+  used_count integer not null default 0 check (used_count >= 0 and used_count <= 15),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.rider_id_weekly_usage enable row level security;
+
+-- Browser clients should never update the counter table directly.
+revoke all on table public.rider_id_weekly_usage from anon, authenticated;
+
+create or replace function public.get_weekly_id_usage()
+returns table (
+  used_count integer,
+  remaining_count integer,
+  week_start date
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_week_start date := date_trunc('week', timezone('Africa/Nairobi', now()))::date;
+  v_used integer;
+begin
+  select u.used_count
+    into v_used
+  from public.rider_id_weekly_usage u
+  where u.week_start = v_week_start;
+
+  v_used := coalesce(v_used, 0);
+
+  return query
+  select v_used, greatest(0, 15 - v_used), v_week_start;
+end;
+$$;
+
+create or replace function public.claim_weekly_id_slot()
+returns table (
+  allowed boolean,
+  used_count integer,
+  remaining_count integer,
+  week_start date
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_week_start date := date_trunc('week', timezone('Africa/Nairobi', now()))::date;
+  v_used integer;
+begin
+  insert into public.rider_id_weekly_usage as u (week_start, used_count, updated_at)
+  values (v_week_start, 1, now())
+  on conflict (week_start) do update
+    set used_count = u.used_count + 1,
+        updated_at = now()
+    where u.used_count < 15
+  returning rider_id_weekly_usage.used_count into v_used;
+
+  if v_used is null then
+    select u.used_count
+      into v_used
+    from public.rider_id_weekly_usage u
+    where u.week_start = v_week_start;
+
+    v_used := coalesce(v_used, 15);
+    return query select false, v_used, greatest(0, 15 - v_used), v_week_start;
+    return;
+  end if;
+
+  return query select true, v_used, greatest(0, 15 - v_used), v_week_start;
+end;
+$$;
+
+revoke all on function public.get_weekly_id_usage() from public;
+revoke all on function public.claim_weekly_id_slot() from public;
+
+grant execute on function public.get_weekly_id_usage() to anon, authenticated;
+grant execute on function public.claim_weekly_id_slot() to anon, authenticated;
