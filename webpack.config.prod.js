@@ -8,12 +8,15 @@ module.exports = merge(common, {
   plugins: [
     new HtmlWebpackPlugin({
       template: './index.html',
+      inject: false,
+      supabaseUrl: process.env.SUPABASE_URL || '',
+      supabaseKey: process.env.SUPABASE_PUBLISHABLE_KEY || '',
     }),
     new CopyPlugin({
       patterns: [
-        { from: 'img', to: 'img' },
-        { from: 'css', to: 'css' },
-        { from: 'js/vendor', to: 'js/vendor' },
+        { from: 'Horizontal ID.jpg', to: 'Horizontal ID.jpg' },
+        { from: 'Horizontal ID Updated Back with QR.jpg', to: 'Horizontal ID Updated Back with QR.jpg' },
+        { from: 'Horizontal ID Back with QR.jpg', to: 'Horizontal ID Back with QR.jpg' },
         { from: 'icon.svg', to: 'icon.svg' },
         { from: 'favicon.ico', to: 'favicon.ico' },
         { from: 'robots.txt', to: 'robots.txt' },
