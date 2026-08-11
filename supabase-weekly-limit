@@ -1,16 +1,16 @@
--- Rider ID Generator: Sunday-Saturday weekly allowance, records, audit log, expiry and renewal.
+-- Rider ID Generator: Sunday-Saturday weekly allowance, records, audit log, expiry, renewal, pause/resume and revocation.
 -- Run this entire file in Supabase SQL Editor.
 
 create extension if not exists pgcrypto;
 
 -- Migration-safe cleanup: older versions of these RPCs may have different return types.
--- PostgreSQL cannot CREATE OR REPLACE a function when its return shape changes, so drop the old RPCs first.
 drop function if exists public.get_weekly_id_usage();
 drop function if exists public.claim_weekly_id_slot();
 drop function if exists public.register_id_generation(text,text,text,text);
 drop function if exists public.search_generated_ids(text);
 drop function if exists public.log_id_action(uuid,uuid,text,jsonb);
 drop function if exists public.get_id_audit_log(integer);
+drop function if exists public.set_rider_id_status(uuid,text,text);
 
 create table if not exists public.rider_ids (
   id uuid primary key default gen_random_uuid(),
@@ -19,9 +19,30 @@ create table if not exists public.rider_ids (
   rider_name text not null,
   workplace_code text not null check (workplace_code in ('MG','EG')),
   workplace_name text not null,
+  operational_status text not null default 'ACTIVE',
+  status_reason text,
+  status_changed_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Safe migration for projects that already have rider_ids from an earlier version.
+alter table public.rider_ids add column if not exists operational_status text not null default 'ACTIVE';
+alter table public.rider_ids add column if not exists status_reason text;
+alter table public.rider_ids add column if not exists status_changed_at timestamptz not null default now();
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'rider_ids_operational_status_check'
+      and conrelid = 'public.rider_ids'::regclass
+  ) then
+    alter table public.rider_ids
+      add constraint rider_ids_operational_status_check
+      check (operational_status in ('ACTIVE','PAUSED','REVOKED'));
+  end if;
+end $$;
 
 create table if not exists public.id_generations (
   id uuid primary key default gen_random_uuid(),
@@ -45,6 +66,7 @@ create table if not exists public.id_audit_log (
 create index if not exists idx_id_generations_week_start on public.id_generations(week_start);
 create index if not exists idx_id_generations_rider_id on public.id_generations(rider_id, generated_at desc);
 create index if not exists idx_rider_ids_search on public.rider_ids(full_id_number, rider_number, rider_name);
+create index if not exists idx_rider_ids_operational_status on public.rider_ids(operational_status);
 create index if not exists idx_id_audit_created_at on public.id_audit_log(created_at desc);
 
 alter table public.rider_ids enable row level security;
@@ -143,7 +165,7 @@ begin
     raise exception 'Invalid generation type';
   end if;
 
-  -- Serialize claims to prevent two devices from taking slot 15 at the same time.
+  -- Serialize claims so two devices cannot both take the final weekly slot.
   perform pg_advisory_xact_lock(hashtext('rider-id-week-' || v_week_start::text));
 
   select count(*)::integer into v_used
@@ -161,12 +183,22 @@ begin
   v_full_id := 'MTS-' || p_workplace_code || '-' || upper(regexp_replace(trim(p_rider_number), '[^A-Za-z0-9-]', '', 'g'));
   v_workplace_name := case when p_workplace_code = 'EG' then 'EasyGas' else 'M-Gas' end;
 
-  insert into public.rider_ids (rider_number, full_id_number, rider_name, workplace_code, workplace_name)
-  values (upper(regexp_replace(trim(p_rider_number), '[^A-Za-z0-9-]', '', 'g')), v_full_id, trim(p_rider_name), p_workplace_code, v_workplace_name)
+  insert into public.rider_ids (
+    rider_number, full_id_number, rider_name, workplace_code, workplace_name,
+    operational_status, status_reason, status_changed_at
+  )
+  values (
+    upper(regexp_replace(trim(p_rider_number), '[^A-Za-z0-9-]', '', 'g')),
+    v_full_id, trim(p_rider_name), p_workplace_code, v_workplace_name,
+    'ACTIVE', null, now()
+  )
   on conflict (full_id_number) do update
     set rider_name = excluded.rider_name,
         workplace_code = excluded.workplace_code,
         workplace_name = excluded.workplace_name,
+        operational_status = 'ACTIVE',
+        status_reason = null,
+        status_changed_at = now(),
         updated_at = now()
   returning id into v_rider_id;
 
@@ -191,6 +223,81 @@ begin
 end;
 $$;
 
+create or replace function public.set_rider_id_status(
+  p_rider_id uuid,
+  p_action text,
+  p_reason text default null
+)
+returns table(
+  rider_id uuid,
+  operational_status text,
+  status_reason text,
+  status_changed_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_action text := upper(trim(coalesce(p_action,'')));
+  v_current text;
+  v_new text;
+  v_reason text := nullif(trim(coalesce(p_reason,'')), '');
+  v_generation_id uuid;
+begin
+  select r.operational_status into v_current
+  from public.rider_ids r
+  where r.id = p_rider_id
+  for update;
+
+  if not found then
+    raise exception 'Rider ID record not found';
+  end if;
+
+  if v_action = 'PAUSE' then
+    if v_current <> 'ACTIVE' then raise exception 'Only an active ID can be paused'; end if;
+    if v_reason is null then raise exception 'A pause reason is required'; end if;
+    v_new := 'PAUSED';
+  elsif v_action = 'RESUME' then
+    if v_current <> 'PAUSED' then raise exception 'Only a paused ID can be resumed'; end if;
+    v_new := 'ACTIVE';
+    v_reason := null;
+  elsif v_action = 'REVOKE' then
+    if v_current = 'REVOKED' then raise exception 'ID is already revoked'; end if;
+    if v_reason is null then raise exception 'A revocation reason is required'; end if;
+    v_new := 'REVOKED';
+  else
+    raise exception 'Invalid status action';
+  end if;
+
+  update public.rider_ids
+  set operational_status = v_new,
+      status_reason = v_reason,
+      status_changed_at = now(),
+      updated_at = now()
+  where id = p_rider_id;
+
+  select g.id into v_generation_id
+  from public.id_generations g
+  where g.rider_id = p_rider_id
+  order by g.generated_at desc
+  limit 1;
+
+  insert into public.id_audit_log(rider_id, generation_id, action, details)
+  values (
+    p_rider_id,
+    v_generation_id,
+    case v_action when 'PAUSE' then 'PAUSED' when 'RESUME' then 'RESUMED' else 'REVOKED' end,
+    jsonb_build_object('reason', v_reason, 'previous_status', v_current, 'new_status', v_new, 'weekly_slot_used', false)
+  );
+
+  return query
+  select r.id, r.operational_status, r.status_reason, r.status_changed_at
+  from public.rider_ids r
+  where r.id = p_rider_id;
+end;
+$$;
+
 create or replace function public.search_generated_ids(p_query text default '')
 returns table(
   rider_id uuid,
@@ -204,6 +311,8 @@ returns table(
   generated_at timestamptz,
   expires_at timestamptz,
   status text,
+  status_reason text,
+  status_changed_at timestamptz,
   generation_count bigint
 )
 language sql
@@ -232,10 +341,14 @@ as $$
     l.generated_at,
     l.expires_at,
     case
+      when r.operational_status = 'PAUSED' then 'PAUSED'
+      when r.operational_status = 'REVOKED' then 'REVOKED'
       when l.expires_at <= now() then 'EXPIRED'
       when l.expires_at <= now() + interval '30 days' then 'EXPIRING_SOON'
       else 'ACTIVE'
     end,
+    r.status_reason,
+    r.status_changed_at,
     c.generation_count
   from public.rider_ids r
   join latest l on l.rider_id = r.id
@@ -245,6 +358,7 @@ as $$
      or r.rider_number ilike '%' || trim(p_query) || '%'
      or r.rider_name ilike '%' || trim(p_query) || '%'
      or r.workplace_name ilike '%' || trim(p_query) || '%'
+     or r.operational_status ilike '%' || trim(p_query) || '%'
   order by l.generated_at desc
   limit 100;
 $$;
@@ -301,6 +415,7 @@ $$;
 
 grant execute on function public.get_weekly_id_usage() to anon, authenticated;
 grant execute on function public.register_id_generation(text,text,text,text) to anon, authenticated;
+grant execute on function public.set_rider_id_status(uuid,text,text) to anon, authenticated;
 grant execute on function public.search_generated_ids(text) to anon, authenticated;
 grant execute on function public.log_id_action(uuid,uuid,text,jsonb) to anon, authenticated;
 grant execute on function public.get_id_audit_log(integer) to anon, authenticated;
