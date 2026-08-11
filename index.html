@@ -7,6 +7,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="/api/config"></script>
 
 <style>
 :root {
@@ -196,44 +199,56 @@ body {
 <script>
 const WEEKLY_LIMIT = 15;
 let currentRiderCounted = false;
+let lastKnownUsage = { used_count: 0, remaining_count: WEEKLY_LIMIT };
 
-function getWeekKey(date = new Date()) {
-  // ISO week key, using local calendar date converted safely to UTC.
-  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
-  return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+const supabaseUrl = window.__SUPABASE_CONFIG__?.url?.trim();
+const supabaseKey = window.__SUPABASE_CONFIG__?.key?.trim();
+const supabaseClient = supabaseUrl && supabaseKey
+  ? window.supabase.createClient(supabaseUrl, supabaseKey)
+  : null;
+
+function setDownloadButtonsDisabled(disabled) {
+  document.querySelectorAll('.download-button').forEach(button => {
+    button.disabled = disabled;
+  });
 }
 
-function readUsage() {
-  const weekKey = getWeekKey();
-  let stored = {};
-  try { stored = JSON.parse(localStorage.getItem('riderIdWeeklyUsage') || '{}'); } catch (_) {}
-  if (stored.weekKey !== weekKey) stored = { weekKey, count: 0 };
-  return stored;
-}
-
-function saveUsage(usage) {
-  localStorage.setItem('riderIdWeeklyUsage', JSON.stringify(usage));
-}
-
-function updateLimitDisplay() {
-  const usage = readUsage();
-  const remaining = Math.max(0, WEEKLY_LIMIT - usage.count);
-  document.getElementById('usedCount').textContent = usage.count;
+function setLimitDisplay(used, remaining) {
+  lastKnownUsage = { used_count: used, remaining_count: remaining };
+  document.getElementById('usedCount').textContent = used;
   document.getElementById('remainingCount').textContent = remaining;
   document.getElementById('limitBox').classList.toggle('limit-reached', remaining === 0);
-  document.querySelectorAll('.download-button').forEach(button => {
-    button.disabled = remaining === 0 && !currentRiderCounted;
-  });
+  setDownloadButtonsDisabled(remaining === 0 && !currentRiderCounted);
 }
 
 function setMessage(text, type = '') {
   const element = document.getElementById('message');
   element.textContent = text;
   element.className = `message ${type}`.trim();
+}
+
+async function updateLimitDisplay() {
+  if (!supabaseClient) {
+    setLimitDisplay(0, 0);
+    setMessage('Supabase is not configured. Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in Vercel.', 'error');
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.rpc('get_weekly_id_usage');
+    if (error) throw error;
+
+    const usage = Array.isArray(data) ? data[0] : data;
+    const used = Number(usage?.used_count ?? 0);
+    const remaining = Number(usage?.remaining_count ?? Math.max(0, WEEKLY_LIMIT - used));
+    setLimitDisplay(used, remaining);
+    return true;
+  } catch (error) {
+    console.error('Could not load weekly usage:', error);
+    setDownloadButtonsDisabled(true);
+    setMessage('Could not verify the weekly ID allowance. Downloads are disabled until Supabase is reachable.', 'error');
+    return false;
+  }
 }
 
 function getClientDetails() {
@@ -267,22 +282,41 @@ function validateRider() {
   return true;
 }
 
-function registerCurrentRider() {
+async function registerCurrentRider() {
   if (currentRiderCounted) return true;
 
-  const usage = readUsage();
-  if (usage.count >= WEEKLY_LIMIT) {
-    setMessage('The weekly limit of 15 rider IDs has been reached.', 'error');
-    updateLimitDisplay();
+  if (!supabaseClient) {
+    setMessage('Supabase is not configured, so this ID cannot be registered.', 'error');
     return false;
   }
 
-  usage.count += 1;
-  saveUsage(usage);
-  currentRiderCounted = true;
-  updateLimitDisplay();
-  setMessage(`Rider ID registered. ${WEEKLY_LIMIT - usage.count} ID(s) remain this week.`, 'success');
-  return true;
+  setDownloadButtonsDisabled(true);
+
+  try {
+    const { data, error } = await supabaseClient.rpc('claim_weekly_id_slot');
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] : data;
+    const allowed = Boolean(result?.allowed);
+    const used = Number(result?.used_count ?? lastKnownUsage.used_count);
+    const remaining = Number(result?.remaining_count ?? Math.max(0, WEEKLY_LIMIT - used));
+
+    setLimitDisplay(used, remaining);
+
+    if (!allowed) {
+      setMessage('The global weekly limit of 15 rider IDs has been reached.', 'error');
+      return false;
+    }
+
+    currentRiderCounted = true;
+    setMessage(`Rider ID registered globally. ${remaining} ID(s) remain this week.`, 'success');
+    return true;
+  } catch (error) {
+    console.error('Could not register rider ID:', error);
+    setMessage('Could not register this ID with Supabase. Nothing was counted. Please try again.', 'error');
+    await updateLimitDisplay();
+    return false;
+  }
 }
 
 function safeFilenamePart(value, fallback) {
@@ -291,7 +325,7 @@ function safeFilenamePart(value, fallback) {
 }
 
 async function downloadPNG(id, side) {
-  if (!validateRider() || !registerCurrentRider()) return;
+  if (!validateRider() || !(await registerCurrentRider())) return;
 
   const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
   const riderID = safeFilenamePart(document.getElementById('idPreview').textContent, 'ID');
@@ -315,7 +349,7 @@ async function downloadPNG(id, side) {
 }
 
 async function downloadPDF() {
-  if (!validateRider() || !registerCurrentRider()) return;
+  if (!validateRider() || !(await registerCurrentRider())) return;
 
   const { jsPDF } = window.jspdf;
   const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
@@ -344,14 +378,14 @@ async function downloadPDF() {
   }
 }
 
-function nextRider() {
+async function nextRider() {
   document.getElementById('riderName').value = '';
   document.getElementById('riderNumber').value = '';
   document.getElementById('clientSelect').selectedIndex = 0;
   currentRiderCounted = false;
   setMessage('');
   updatePreview();
-  updateLimitDisplay();
+  await updateLimitDisplay();
   document.getElementById('riderName').focus();
 }
 
