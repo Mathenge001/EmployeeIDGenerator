@@ -1,83 +1,306 @@
--- Global Rider ID weekly limit: 15 IDs across all browsers/devices.
--- Run this entire file once in Supabase Dashboard -> SQL Editor.
+-- Rider ID Generator: Sunday-Saturday weekly allowance, records, audit log, expiry and renewal.
+-- Run this entire file in Supabase SQL Editor.
 
-create table if not exists public.rider_id_weekly_usage (
-  week_start date primary key,
-  used_count integer not null default 0 check (used_count >= 0 and used_count <= 15),
+create extension if not exists pgcrypto;
+
+-- Migration-safe cleanup: older versions of these RPCs may have different return types.
+-- PostgreSQL cannot CREATE OR REPLACE a function when its return shape changes, so drop the old RPCs first.
+drop function if exists public.get_weekly_id_usage();
+drop function if exists public.claim_weekly_id_slot();
+drop function if exists public.register_id_generation(text,text,text,text);
+drop function if exists public.search_generated_ids(text);
+drop function if exists public.log_id_action(uuid,uuid,text,jsonb);
+drop function if exists public.get_id_audit_log(integer);
+
+create table if not exists public.rider_ids (
+  id uuid primary key default gen_random_uuid(),
+  rider_number text not null,
+  full_id_number text not null unique,
+  rider_name text not null,
+  workplace_code text not null check (workplace_code in ('MG','EG')),
+  workplace_name text not null,
+  created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-alter table public.rider_id_weekly_usage enable row level security;
+create table if not exists public.id_generations (
+  id uuid primary key default gen_random_uuid(),
+  rider_id uuid not null references public.rider_ids(id) on delete cascade,
+  generation_type text not null check (generation_type in ('INITIAL','REGENERATION','RENEWAL')),
+  generated_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  week_start date not null,
+  weekly_sequence_number integer not null check (weekly_sequence_number between 1 and 15)
+);
 
--- Browser clients should never update the counter table directly.
-revoke all on table public.rider_id_weekly_usage from anon, authenticated;
+create table if not exists public.id_audit_log (
+  id bigint generated always as identity primary key,
+  rider_id uuid references public.rider_ids(id) on delete set null,
+  generation_id uuid references public.id_generations(id) on delete set null,
+  action text not null,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_id_generations_week_start on public.id_generations(week_start);
+create index if not exists idx_id_generations_rider_id on public.id_generations(rider_id, generated_at desc);
+create index if not exists idx_rider_ids_search on public.rider_ids(full_id_number, rider_number, rider_name);
+create index if not exists idx_id_audit_created_at on public.id_audit_log(created_at desc);
+
+alter table public.rider_ids enable row level security;
+alter table public.id_generations enable row level security;
+alter table public.id_audit_log enable row level security;
+
+-- No direct browser table access. The browser uses only the RPC functions below.
+revoke all on public.rider_ids from anon, authenticated;
+revoke all on public.id_generations from anon, authenticated;
+revoke all on public.id_audit_log from anon, authenticated;
+
+create or replace function public.current_nairobi_week_start()
+returns date
+language sql
+stable
+as $$
+  select (
+    (timezone('Africa/Nairobi', now()))::date
+    - extract(dow from timezone('Africa/Nairobi', now()))::integer
+  )::date;
+$$;
 
 create or replace function public.get_weekly_id_usage()
-returns table (
+returns table(
   used_count integer,
   remaining_count integer,
-  week_start date
+  week_start date,
+  week_end date,
+  reset_at timestamptz
 )
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_week_start date := date_trunc('week', timezone('Africa/Nairobi', now()))::date;
+  v_week_start date := public.current_nairobi_week_start();
   v_used integer;
 begin
-  select u.used_count
-    into v_used
-  from public.rider_id_weekly_usage u
-  where u.week_start = v_week_start;
-
-  v_used := coalesce(v_used, 0);
+  select count(*)::integer
+  into v_used
+  from public.id_generations
+  where id_generations.week_start = v_week_start;
 
   return query
-  select v_used, greatest(0, 15 - v_used), v_week_start;
+  select
+    v_used,
+    greatest(0, 15 - v_used),
+    v_week_start,
+    v_week_start + 6,
+    ((v_week_start + 7)::timestamp at time zone 'Africa/Nairobi');
 end;
 $$;
 
-create or replace function public.claim_weekly_id_slot()
-returns table (
+create or replace function public.register_id_generation(
+  p_rider_number text,
+  p_rider_name text,
+  p_workplace_code text,
+  p_generation_type text default 'INITIAL'
+)
+returns table(
   allowed boolean,
+  rider_id uuid,
+  generation_id uuid,
+  full_id_number text,
+  generated_at timestamptz,
+  expires_at timestamptz,
   used_count integer,
   remaining_count integer,
-  week_start date
+  weekly_sequence_number integer,
+  reset_at timestamptz
 )
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_week_start date := date_trunc('week', timezone('Africa/Nairobi', now()))::date;
+  v_week_start date := public.current_nairobi_week_start();
   v_used integer;
+  v_rider_id uuid;
+  v_generation_id uuid;
+  v_full_id text;
+  v_workplace_name text;
+  v_generated_at timestamptz := now();
+  v_expires_at timestamptz := now() + interval '1 year';
+  v_type text := upper(trim(coalesce(p_generation_type, 'INITIAL')));
 begin
-  insert into public.rider_id_weekly_usage as u (week_start, used_count, updated_at)
-  values (v_week_start, 1, now())
-  on conflict (week_start) do update
-    set used_count = u.used_count + 1,
-        updated_at = now()
-    where u.used_count < 15
-  returning rider_id_weekly_usage.used_count into v_used;
+  if nullif(trim(p_rider_number), '') is null or nullif(trim(p_rider_name), '') is null then
+    raise exception 'Rider number and rider name are required';
+  end if;
 
-  if v_used is null then
-    select u.used_count
-      into v_used
-    from public.rider_id_weekly_usage u
-    where u.week_start = v_week_start;
+  if p_workplace_code not in ('MG','EG') then
+    raise exception 'Invalid workplace code';
+  end if;
 
-    v_used := coalesce(v_used, 15);
-    return query select false, v_used, greatest(0, 15 - v_used), v_week_start;
+  if v_type not in ('INITIAL','REGENERATION','RENEWAL') then
+    raise exception 'Invalid generation type';
+  end if;
+
+  -- Serialize claims to prevent two devices from taking slot 15 at the same time.
+  perform pg_advisory_xact_lock(hashtext('rider-id-week-' || v_week_start::text));
+
+  select count(*)::integer into v_used
+  from public.id_generations
+  where week_start = v_week_start;
+
+  if v_used >= 15 then
+    return query
+    select false, null::uuid, null::uuid, null::text, null::timestamptz, null::timestamptz,
+           v_used, 0, null::integer,
+           ((v_week_start + 7)::timestamp at time zone 'Africa/Nairobi');
     return;
   end if;
 
-  return query select true, v_used, greatest(0, 15 - v_used), v_week_start;
+  v_full_id := 'MTS-' || p_workplace_code || '-' || upper(regexp_replace(trim(p_rider_number), '[^A-Za-z0-9-]', '', 'g'));
+  v_workplace_name := case when p_workplace_code = 'EG' then 'EasyGas' else 'M-Gas' end;
+
+  insert into public.rider_ids (rider_number, full_id_number, rider_name, workplace_code, workplace_name)
+  values (upper(regexp_replace(trim(p_rider_number), '[^A-Za-z0-9-]', '', 'g')), v_full_id, trim(p_rider_name), p_workplace_code, v_workplace_name)
+  on conflict (full_id_number) do update
+    set rider_name = excluded.rider_name,
+        workplace_code = excluded.workplace_code,
+        workplace_name = excluded.workplace_name,
+        updated_at = now()
+  returning id into v_rider_id;
+
+  insert into public.id_generations (
+    rider_id, generation_type, generated_at, expires_at, week_start, weekly_sequence_number
+  ) values (
+    v_rider_id, v_type, v_generated_at, v_expires_at, v_week_start, v_used + 1
+  ) returning id into v_generation_id;
+
+  insert into public.id_audit_log (rider_id, generation_id, action, details)
+  values (
+    v_rider_id,
+    v_generation_id,
+    v_type,
+    jsonb_build_object('weekly_slot', v_used + 1, 'full_id_number', v_full_id)
+  );
+
+  return query
+  select true, v_rider_id, v_generation_id, v_full_id, v_generated_at, v_expires_at,
+         v_used + 1, 15 - (v_used + 1), v_used + 1,
+         ((v_week_start + 7)::timestamp at time zone 'Africa/Nairobi');
 end;
 $$;
 
-revoke all on function public.get_weekly_id_usage() from public;
-revoke all on function public.claim_weekly_id_slot() from public;
+create or replace function public.search_generated_ids(p_query text default '')
+returns table(
+  rider_id uuid,
+  full_id_number text,
+  rider_number text,
+  rider_name text,
+  workplace_code text,
+  workplace_name text,
+  generation_id uuid,
+  generation_type text,
+  generated_at timestamptz,
+  expires_at timestamptz,
+  status text,
+  generation_count bigint
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with latest as (
+    select distinct on (g.rider_id)
+      g.rider_id, g.id, g.generation_type, g.generated_at, g.expires_at
+    from public.id_generations g
+    order by g.rider_id, g.generated_at desc
+  ), counts as (
+    select rider_id, count(*) generation_count
+    from public.id_generations
+    group by rider_id
+  )
+  select
+    r.id,
+    r.full_id_number,
+    r.rider_number,
+    r.rider_name,
+    r.workplace_code,
+    r.workplace_name,
+    l.id,
+    l.generation_type,
+    l.generated_at,
+    l.expires_at,
+    case
+      when l.expires_at <= now() then 'EXPIRED'
+      when l.expires_at <= now() + interval '30 days' then 'EXPIRING_SOON'
+      else 'ACTIVE'
+    end,
+    c.generation_count
+  from public.rider_ids r
+  join latest l on l.rider_id = r.id
+  join counts c on c.rider_id = r.id
+  where coalesce(trim(p_query), '') = ''
+     or r.full_id_number ilike '%' || trim(p_query) || '%'
+     or r.rider_number ilike '%' || trim(p_query) || '%'
+     or r.rider_name ilike '%' || trim(p_query) || '%'
+     or r.workplace_name ilike '%' || trim(p_query) || '%'
+  order by l.generated_at desc
+  limit 100;
+$$;
+
+create or replace function public.log_id_action(
+  p_rider_id uuid,
+  p_generation_id uuid,
+  p_action text,
+  p_details jsonb default '{}'::jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if upper(trim(p_action)) not in ('DOWNLOAD_FRONT','DOWNLOAD_BACK','DOWNLOAD_PDF','VIEWED') then
+    raise exception 'Invalid audit action';
+  end if;
+
+  insert into public.id_audit_log(rider_id, generation_id, action, details)
+  values (p_rider_id, p_generation_id, upper(trim(p_action)), coalesce(p_details, '{}'::jsonb));
+end;
+$$;
+
+create or replace function public.get_id_audit_log(p_limit integer default 100)
+returns table(
+  created_at timestamptz,
+  action text,
+  full_id_number text,
+  rider_name text,
+  workplace_name text,
+  generation_type text,
+  details jsonb
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    a.created_at,
+    a.action,
+    r.full_id_number,
+    r.rider_name,
+    r.workplace_name,
+    g.generation_type,
+    a.details
+  from public.id_audit_log a
+  left join public.rider_ids r on r.id = a.rider_id
+  left join public.id_generations g on g.id = a.generation_id
+  order by a.created_at desc
+  limit least(greatest(coalesce(p_limit,100),1),500);
+$$;
 
 grant execute on function public.get_weekly_id_usage() to anon, authenticated;
-grant execute on function public.claim_weekly_id_slot() to anon, authenticated;
+grant execute on function public.register_id_generation(text,text,text,text) to anon, authenticated;
+grant execute on function public.search_generated_ids(text) to anon, authenticated;
+grant execute on function public.log_id_action(uuid,uuid,text,jsonb) to anon, authenticated;
+grant execute on function public.get_id_audit_log(integer) to anon, authenticated;
