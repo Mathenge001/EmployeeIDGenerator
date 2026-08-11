@@ -4,393 +4,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rider ID Generator</title>
-
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script src="/api/config"></script>
-
 <style>
-:root {
-  color-scheme: dark;
-  font-family: Arial, sans-serif;
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: #111;
-  color: #fff;
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-  align-items: flex-start;
-}
-
-.controls {
-  width: 340px;
-  flex: 0 0 340px;
-  background: #1e1e1e;
-  padding: 18px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.28);
-}
-
-.controls h3 { margin: 0 0 14px; }
-.controls label {
-  display: block;
-  margin: 12px 0 6px;
-  font-weight: 700;
-}
-.controls input,
-.controls select,
-.controls button {
-  width: 100%;
-  padding: 10px;
-  border-radius: 7px;
-  border: 1px solid #444;
-  font-size: 14px;
-}
-.controls input,
-.controls select {
-  background: #111;
-  color: #fff;
-}
-.controls button {
-  margin-top: 10px;
-  cursor: pointer;
-  font-weight: 700;
-  border: 0;
-}
-.controls button.primary { background: #d4af37; color: #111; }
-.controls button.secondary { background: #333; color: #fff; }
-.controls button:disabled { opacity: .45; cursor: not-allowed; }
-
-.limit-box {
-  padding: 11px 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 8px;
-  background: #171717;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-.limit-box strong { color: #e5c14e; }
-.limit-box.limit-reached { border-color: #b91c1c; background: #2b1212; }
-
-.message {
-  min-height: 20px;
-  margin-top: 10px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.message.error { color: #fca5a5; }
-.message.success { color: #86efac; }
-
-.preview-stage {
-  overflow: auto;
-  max-width: calc(100vw - 400px);
-  padding-bottom: 10px;
-}
-
-.card-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 1011px;
-}
-
-.id-card {
-  position: relative;
-  width: 1011px;
-  height: 638px;
-  background: #fff;
-  overflow: hidden;
-}
-.id-card img.bg { width: 100%; height: 100%; display: block; }
-
-/* The photo area has been removed. Rider information now occupies the card clearly. */
-.rider-id {
-  position: absolute;
-  left: 92px;
-  top: 330px;
-  font-size: 32px;
-  font-weight: 800;
-  color: #111;
-  letter-spacing: 1px;
-}
-.name {
-  position: absolute;
-  left: 92px;
-  top: 395px;
-  width: 820px;
-  font-size: 58px;
-  line-height: 1.05;
-  font-weight: 800;
-  color: #000;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.workplace {
-  position: absolute;
-  left: 92px;
-  top: 486px;
-  font-size: 31px;
-  font-weight: 700;
-  color: #a88718;
-}
-
-@media (max-width: 900px) {
-  body { flex-direction: column; padding: 12px; }
-  .controls { width: 100%; flex-basis: auto; }
-  .preview-stage { max-width: 100%; width: 100%; }
-}
+:root{color-scheme:dark;font-family:Arial,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#111;color:#fff;padding:20px}.layout{display:grid;grid-template-columns:360px minmax(720px,1fr);gap:20px;align-items:start}.panel{background:#1e1e1e;padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.28)}h3,h4{margin:0 0 14px}label{display:block;margin:12px 0 6px;font-weight:700}input,select,button{width:100%;padding:10px;border-radius:7px;border:1px solid #444;font-size:14px}input,select{background:#111;color:#fff}button{margin-top:10px;cursor:pointer;font-weight:700;border:0}button.primary{background:#d4af37;color:#111}button.secondary{background:#333;color:#fff}button.danger{background:#7f1d1d;color:#fff}button:disabled{opacity:.45;cursor:not-allowed}.limit-box{padding:12px;border:1px solid #4a4a4a;border-radius:8px;background:#171717;margin-bottom:12px;line-height:1.5}.limit-box strong{color:#e5c14e}.limit-box.limit-reached{border-color:#b91c1c;background:#2b1212}.countdown{margin-top:6px;font-family:monospace;font-size:16px}.message{min-height:20px;margin-top:10px;font-size:13px;line-height:1.4}.message.error{color:#fca5a5}.message.success{color:#86efac}.preview-stage{overflow:auto}.card-wrapper{display:flex;flex-direction:column;gap:20px;min-width:1011px}.id-card{position:relative;width:1011px;height:638px;background:#fff;overflow:hidden}.id-card img.bg{width:100%;height:100%;display:block}.rider-id{position:absolute;left:92px;top:330px;font-size:32px;font-weight:800;color:#111;letter-spacing:1px}.name{position:absolute;left:92px;top:395px;width:820px;font-size:58px;line-height:1.05;font-weight:800;color:#000;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.workplace{position:absolute;left:92px;top:486px;font-size:31px;font-weight:700;color:#a88718}.section{margin-top:20px}.toolbar{display:flex;gap:8px}.toolbar input{flex:1}.toolbar button{width:auto;margin-top:0}.records{margin-top:10px;display:grid;gap:8px;max-height:440px;overflow:auto}.record{border:1px solid #3a3a3a;background:#171717;border-radius:8px;padding:10px}.record-title{font-weight:800}.muted{color:#aaa;font-size:12px}.status{display:inline-block;padding:3px 7px;border-radius:999px;background:#333;font-size:11px;font-weight:800;margin:5px 0}.record-actions{display:flex;gap:6px;flex-wrap:wrap}.record-actions button{width:auto;margin-top:4px;padding:7px 9px}.audit{max-height:360px;overflow:auto;font-size:12px}.audit-row{padding:8px 0;border-bottom:1px solid #333}@media(max-width:1100px){.layout{grid-template-columns:1fr}.preview-stage{max-width:100%}}
 </style>
 </head>
 <body>
+<div class="layout">
+  <div>
+    <div class="panel">
+      <h3>Rider ID Editor</h3>
+      <div class="limit-box" id="limitBox">
+        Weekly usage: <strong><span id="usedCount">0</span>/15</strong><br>
+        Remaining: <strong id="remainingCount">15</strong><br>
+        Week: <span id="weekRange">Loading...</span>
+        <div class="countdown" id="countdown">--</div>
+      </div>
 
-<div class="controls">
-  <h3>Rider ID Editor</h3>
+      <label for="clientSelect">Rider Workplace</label>
+      <select id="clientSelect" onchange="formChanged();updatePreview()"><option value="MG">M-Gas</option><option value="EG">EasyGas</option></select>
+      <label for="riderNumber">Rider ID Number</label>
+      <input id="riderNumber" placeholder="e.g. 1023" maxlength="20" oninput="formChanged();updatePreview()">
+      <label for="riderName">Rider Name</label>
+      <input id="riderName" placeholder="e.g. John Kamau" maxlength="50" oninput="formChanged();updatePreview()">
 
-  <div class="limit-box" id="limitBox">
-    Weekly usage: <strong><span id="usedCount">0</span>/15</strong><br>
-    Remaining this week: <strong id="remainingCount">15</strong>
-  </div>
-
-  <label for="clientSelect">Rider Workplace</label>
-  <select id="clientSelect" onchange="updatePreview()">
-    <option value="MG">M-Gas</option>
-    <option value="EG">EasyGas</option>
-  </select>
-
-  <label for="riderNumber">Rider ID Number</label>
-  <input id="riderNumber" placeholder="e.g. 1023" maxlength="20" oninput="updatePreview()">
-
-  <label for="riderName">Rider Name</label>
-  <input id="riderName" placeholder="e.g. John Kamau" maxlength="50" oninput="updatePreview()">
-
-  <button class="primary download-button" onclick="downloadPNG('frontID', 'Front')">Download Front (PNG)</button>
-  <button class="secondary download-button" onclick="downloadPNG('backID', 'Back')">Download Back (PNG)</button>
-  <button class="secondary download-button" onclick="downloadPDF()">Download PDF (Front + Back)</button>
-  <button class="secondary" onclick="nextRider()">Next Rider</button>
-
-  <div id="message" class="message" aria-live="polite"></div>
-</div>
-
-<div class="preview-stage">
-  <div class="card-wrapper">
-    <div class="id-card" id="frontID">
-      <img src="Horizontal ID.jpg" class="bg" alt="Motosouk ID front template">
-      <div class="rider-id" id="idPreview">MTS-MG-0000</div>
-      <div class="name" id="namePreview">RIDER NAME</div>
-      <div class="workplace" id="workplacePreview">Assigned to: M-Gas</div>
+      <button class="primary download-button" onclick="downloadPNG('frontID','Front')">Download Front (PNG)</button>
+      <button class="secondary download-button" onclick="downloadPNG('backID','Back')">Download Back (PNG)</button>
+      <button class="secondary download-button" onclick="downloadPDF()">Download PDF (Front + Back)</button>
+      <button class="secondary" id="regenerateBtn" onclick="regenerateCurrent()" disabled>Regenerate Current ID</button>
+      <button class="secondary" onclick="nextRider()">Next Rider</button>
+      <div id="message" class="message" aria-live="polite"></div>
     </div>
 
-    <div class="id-card" id="backID">
-      <img src="Horizontal ID Updated Back with QR.jpg" class="bg" alt="Motosouk ID back template">
+    <div class="panel section">
+      <h4>Generated IDs</h4>
+      <div class="toolbar"><input id="searchInput" placeholder="Search name, ID or workplace" onkeydown="if(event.key==='Enter')searchRecords()"><button class="secondary" onclick="searchRecords()">Search</button></div>
+      <div class="records" id="records"></div>
+    </div>
+
+    <div class="panel section">
+      <h4>Audit Log</h4>
+      <button class="secondary" onclick="loadAudit()">Refresh Audit</button>
+      <div class="audit" id="audit"></div>
     </div>
   </div>
-</div>
 
+  <div class="preview-stage"><div class="card-wrapper">
+    <div class="id-card" id="frontID"><img src="Horizontal ID.jpg" class="bg" alt="Motosouk ID front template"><div class="rider-id" id="idPreview">MTS-MG-0000</div><div class="name" id="namePreview">RIDER NAME</div><div class="workplace" id="workplacePreview">Assigned to: M-Gas</div></div>
+    <div class="id-card" id="backID"><img src="Horizontal ID Updated Back with QR.jpg" class="bg" alt="Motosouk ID back template"></div>
+  </div></div>
+</div>
 <script>
-const WEEKLY_LIMIT = 15;
-let currentRiderCounted = false;
-let lastKnownUsage = { used_count: 0, remaining_count: WEEKLY_LIMIT };
+const WEEKLY_LIMIT=15;
+let usage={used_count:0,remaining_count:15,reset_at:null};
+let activeRecord=null; // existing/generated record loaded in editor; downloads from it do not consume a slot
+let resetTimer=null;
+const supabaseUrl=window.__SUPABASE_CONFIG__?.url?.trim();
+const supabaseKey=window.__SUPABASE_CONFIG__?.key?.trim();
+const supabaseClient=supabaseUrl&&supabaseKey?window.supabase.createClient(supabaseUrl,supabaseKey):null;
 
-const supabaseUrl = window.__SUPABASE_CONFIG__?.url?.trim();
-const supabaseKey = window.__SUPABASE_CONFIG__?.key?.trim();
-const supabaseClient = supabaseUrl && supabaseKey
-  ? window.supabase.createClient(supabaseUrl, supabaseKey)
-  : null;
-
-function setDownloadButtonsDisabled(disabled) {
-  document.querySelectorAll('.download-button').forEach(button => {
-    button.disabled = disabled;
-  });
-}
-
-function setLimitDisplay(used, remaining) {
-  lastKnownUsage = { used_count: used, remaining_count: remaining };
-  document.getElementById('usedCount').textContent = used;
-  document.getElementById('remainingCount').textContent = remaining;
-  document.getElementById('limitBox').classList.toggle('limit-reached', remaining === 0);
-  setDownloadButtonsDisabled(remaining === 0 && !currentRiderCounted);
-}
-
-function setMessage(text, type = '') {
-  const element = document.getElementById('message');
-  element.textContent = text;
-  element.className = `message ${type}`.trim();
-}
-
-async function updateLimitDisplay() {
-  if (!supabaseClient) {
-    setLimitDisplay(0, 0);
-    setMessage('Supabase is not configured. Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in Vercel.', 'error');
-    return false;
-  }
-
-  try {
-    const { data, error } = await supabaseClient.rpc('get_weekly_id_usage');
-    if (error) throw error;
-
-    const usage = Array.isArray(data) ? data[0] : data;
-    const used = Number(usage?.used_count ?? 0);
-    const remaining = Number(usage?.remaining_count ?? Math.max(0, WEEKLY_LIMIT - used));
-    setLimitDisplay(used, remaining);
-    return true;
-  } catch (error) {
-    console.error('Could not load weekly usage:', error);
-    setDownloadButtonsDisabled(true);
-    setMessage('Could not verify the weekly ID allowance. Downloads are disabled until Supabase is reachable.', 'error');
-    return false;
-  }
-}
-
-function getClientDetails() {
-  const code = document.getElementById('clientSelect').value;
-  return code === 'EG'
-    ? { code: 'EG', name: 'EasyGas' }
-    : { code: 'MG', name: 'M-Gas' };
-}
-
-function cleanRiderNumber(value) {
-  return value.trim().replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
-}
-
-function updatePreview() {
-  const client = getClientDetails();
-  const number = cleanRiderNumber(document.getElementById('riderNumber').value) || '0000';
-  const name = document.getElementById('riderName').value.trim() || 'RIDER NAME';
-
-  document.getElementById('idPreview').textContent = `MTS-${client.code}-${number}`;
-  document.getElementById('namePreview').textContent = name;
-  document.getElementById('workplacePreview').textContent = `Assigned to: ${client.name}`;
-}
-
-function validateRider() {
-  const name = document.getElementById('riderName').value.trim();
-  const number = cleanRiderNumber(document.getElementById('riderNumber').value);
-  if (!name || !number) {
-    setMessage('Enter both the rider name and rider ID number before downloading.', 'error');
-    return false;
-  }
-  return true;
-}
-
-async function registerCurrentRider() {
-  if (currentRiderCounted) return true;
-
-  if (!supabaseClient) {
-    setMessage('Supabase is not configured, so this ID cannot be registered.', 'error');
-    return false;
-  }
-
-  setDownloadButtonsDisabled(true);
-
-  try {
-    const { data, error } = await supabaseClient.rpc('claim_weekly_id_slot');
-    if (error) throw error;
-
-    const result = Array.isArray(data) ? data[0] : data;
-    const allowed = Boolean(result?.allowed);
-    const used = Number(result?.used_count ?? lastKnownUsage.used_count);
-    const remaining = Number(result?.remaining_count ?? Math.max(0, WEEKLY_LIMIT - used));
-
-    setLimitDisplay(used, remaining);
-
-    if (!allowed) {
-      setMessage('The global weekly limit of 15 rider IDs has been reached.', 'error');
-      return false;
-    }
-
-    currentRiderCounted = true;
-    setMessage(`Rider ID registered globally. ${remaining} ID(s) remain this week.`, 'success');
-    return true;
-  } catch (error) {
-    console.error('Could not register rider ID:', error);
-    setMessage('Could not register this ID with Supabase. Nothing was counted. Please try again.', 'error');
-    await updateLimitDisplay();
-    return false;
-  }
-}
-
-function safeFilenamePart(value, fallback) {
-  const cleaned = value.trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
-  return cleaned || fallback;
-}
-
-async function downloadPNG(id, side) {
-  if (!validateRider() || !(await registerCurrentRider())) return;
-
-  const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
-  const riderID = safeFilenamePart(document.getElementById('idPreview').textContent, 'ID');
-
-  try {
-    const canvas = await html2canvas(document.getElementById(id), {
-      scale: 3,
-      backgroundColor: '#ffffff',
-      useCORS: true
-    });
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png', 1.0);
-    link.download = `${name}_${riderID}_${side}.png`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (error) {
-    setMessage('The image could not be created. Please try again.', 'error');
-    console.error(error);
-  }
-}
-
-async function downloadPDF() {
-  if (!validateRider() || !(await registerCurrentRider())) return;
-
-  const { jsPDF } = window.jspdf;
-  const name = safeFilenamePart(document.getElementById('riderName').value, 'Rider');
-  const riderID = safeFilenamePart(document.getElementById('idPreview').textContent, 'ID');
-
-  try {
-    const front = await html2canvas(document.getElementById('frontID'), {
-      scale: 3,
-      backgroundColor: '#ffffff',
-      useCORS: true
-    });
-    const back = await html2canvas(document.getElementById('backID'), {
-      scale: 3,
-      backgroundColor: '#ffffff',
-      useCORS: true
-    });
-
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85.6, 54] });
-    pdf.addImage(front.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 54);
-    pdf.addPage();
-    pdf.addImage(back.toDataURL('image/png'), 'PNG', 0, 0, 85.6, 54);
-    pdf.save(`${name}_${riderID}_FullID.pdf`);
-  } catch (error) {
-    setMessage('The PDF could not be created. Please try again.', 'error');
-    console.error(error);
-  }
-}
-
-async function nextRider() {
-  document.getElementById('riderName').value = '';
-  document.getElementById('riderNumber').value = '';
-  document.getElementById('clientSelect').selectedIndex = 0;
-  currentRiderCounted = false;
-  setMessage('');
-  updatePreview();
-  await updateLimitDisplay();
-  document.getElementById('riderName').focus();
-}
-
-updatePreview();
-updateLimitDisplay();
+function setMessage(text,type=''){const e=document.getElementById('message');e.textContent=text;e.className=`message ${type}`.trim()}
+function setGenerationDisabled(disabled){document.querySelectorAll('.download-button').forEach(b=>b.disabled=disabled);document.getElementById('regenerateBtn').disabled=disabled||!activeRecord}
+function fmtDate(v){if(!v)return '—';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'}).format(new Date(v))}
+function fmtDateOnly(v){if(!v)return '—';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium'}).format(new Date(v+'T12:00:00+03:00'))}
+function startCountdown(resetAt){usage.reset_at=resetAt;if(resetTimer)clearInterval(resetTimer);const tick=()=>{if(!usage.reset_at){document.getElementById('countdown').textContent='';return}const ms=new Date(usage.reset_at)-new Date();if(ms<=0){document.getElementById('countdown').textContent='New week started — refreshing…';updateLimitDisplay();return}const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;document.getElementById('countdown').textContent=`Next allowance in ${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;};tick();resetTimer=setInterval(tick,1000)}
+function setLimitDisplay(data){usage=data;document.getElementById('usedCount').textContent=data.used_count;document.getElementById('remainingCount').textContent=data.remaining_count;document.getElementById('weekRange').textContent=`${fmtDateOnly(data.week_start)} – ${fmtDateOnly(data.week_end)} (Sun–Sat, EAT)`;document.getElementById('limitBox').classList.toggle('limit-reached',data.remaining_count===0);setGenerationDisabled(data.remaining_count===0&&!activeRecord);startCountdown(data.reset_at)}
+async function updateLimitDisplay(){if(!supabaseClient){setMessage('Supabase is not configured.','error');setGenerationDisabled(true);return false}const{data,error}=await supabaseClient.rpc('get_weekly_id_usage');if(error){console.error(error);setMessage('Could not verify weekly allowance.','error');setGenerationDisabled(true);return false}setLimitDisplay(Array.isArray(data)?data[0]:data);return true}
+function getClientDetails(){const code=document.getElementById('clientSelect').value;return code==='EG'?{code:'EG',name:'EasyGas'}:{code:'MG',name:'M-Gas'}}
+function cleanRiderNumber(v){return v.trim().replace(/[^a-zA-Z0-9-]/g,'').toUpperCase()}
+function updatePreview(){const c=getClientDetails(),n=cleanRiderNumber(document.getElementById('riderNumber').value)||'0000',name=document.getElementById('riderName').value.trim()||'RIDER NAME';document.getElementById('idPreview').textContent=`MTS-${c.code}-${n}`;document.getElementById('namePreview').textContent=name;document.getElementById('workplacePreview').textContent=`Assigned to: ${c.name}`}
+function formChanged(){if(activeRecord){activeRecord=null;document.getElementById('regenerateBtn').disabled=true}}
+function validateRider(){if(!document.getElementById('riderName').value.trim()||!cleanRiderNumber(document.getElementById('riderNumber').value)){setMessage('Enter both rider name and rider ID number.','error');return false}return true}
+async function claimGeneration(type='INITIAL'){if(!validateRider()||!supabaseClient)return false;const c=getClientDetails();setGenerationDisabled(true);const{data,error}=await supabaseClient.rpc('register_id_generation',{p_rider_number:cleanRiderNumber(document.getElementById('riderNumber').value),p_rider_name:document.getElementById('riderName').value.trim(),p_workplace_code:c.code,p_generation_type:type});if(error){console.error(error);setMessage('Could not register generation. Nothing was counted.','error');await updateLimitDisplay();return false}const r=Array.isArray(data)?data[0]:data;if(!r?.allowed){setMessage('Weekly limit reached. Wait until Sunday at 00:00 EAT.','error');await updateLimitDisplay();return false}activeRecord={rider_id:r.rider_id,generation_id:r.generation_id,full_id_number:r.full_id_number,generated_at:r.generated_at,expires_at:r.expires_at,status:'ACTIVE'};setMessage(`${type==='INITIAL'?'Generated':type==='RENEWAL'?'Renewed':'Regenerated'} successfully. Slot ${r.weekly_sequence_number}/15 used.`,'success');await updateLimitDisplay();await searchRecords();await loadAudit();return true}
+async function ensureGeneration(){if(activeRecord)return true;return claimGeneration('INITIAL')}
+function safeFilenamePart(v,fallback){const c=v.trim().replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'');return c||fallback}
+async function logAction(action){if(!activeRecord||!supabaseClient)return;await supabaseClient.rpc('log_id_action',{p_rider_id:activeRecord.rider_id,p_generation_id:activeRecord.generation_id,p_action:action,p_details:{full_id_number:document.getElementById('idPreview').textContent}})}
+async function downloadPNG(id,side){if(!(await ensureGeneration()))return;const name=safeFilenamePart(document.getElementById('riderName').value,'Rider'),rid=safeFilenamePart(document.getElementById('idPreview').textContent,'ID');try{const canvas=await html2canvas(document.getElementById(id),{scale:3,backgroundColor:'#fff',useCORS:true});const a=document.createElement('a');a.href=canvas.toDataURL('image/png',1);a.download=`${name}_${rid}_${side}.png`;document.body.appendChild(a);a.click();a.remove();await logAction(side==='Front'?'DOWNLOAD_FRONT':'DOWNLOAD_BACK');await loadAudit()}catch(e){console.error(e);setMessage('Image could not be created.','error')}}
+async function downloadPDF(){if(!(await ensureGeneration()))return;const{jsPDF}=window.jspdf,name=safeFilenamePart(document.getElementById('riderName').value,'Rider'),rid=safeFilenamePart(document.getElementById('idPreview').textContent,'ID');try{const front=await html2canvas(document.getElementById('frontID'),{scale:3,backgroundColor:'#fff',useCORS:true}),back=await html2canvas(document.getElementById('backID'),{scale:3,backgroundColor:'#fff',useCORS:true});const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:[85.6,54]});pdf.addImage(front.toDataURL('image/png'),'PNG',0,0,85.6,54);pdf.addPage();pdf.addImage(back.toDataURL('image/png'),'PNG',0,0,85.6,54);pdf.save(`${name}_${rid}_FullID.pdf`);await logAction('DOWNLOAD_PDF');await loadAudit()}catch(e){console.error(e);setMessage('PDF could not be created.','error')}}
+async function regenerateCurrent(){if(!activeRecord)return;await claimGeneration(activeRecord.status==='EXPIRED'?'RENEWAL':'REGENERATION')}
+async function nextRider(){document.getElementById('riderName').value='';document.getElementById('riderNumber').value='';document.getElementById('clientSelect').selectedIndex=0;activeRecord=null;setMessage('');updatePreview();await updateLimitDisplay();document.getElementById('riderName').focus()}
+function escapeHtml(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+async function searchRecords(){if(!supabaseClient)return;const q=document.getElementById('searchInput').value.trim();const{data,error}=await supabaseClient.rpc('search_generated_ids',{p_query:q});const box=document.getElementById('records');if(error){box.innerHTML='<div class="muted">Could not load records.</div>';return}box.innerHTML=(data||[]).map((r,i)=>`<div class="record"><div class="record-title">${escapeHtml(r.full_id_number)} — ${escapeHtml(r.rider_name)}</div><div class="muted">${escapeHtml(r.workplace_name)} · Generated ${fmtDate(r.generated_at)} · Expires ${fmtDate(r.expires_at)} · ${r.generation_count} generation(s)</div><span class="status">${escapeHtml(r.status)}</span><div class="record-actions"><button class="secondary" onclick="loadRecord(${i})">Load / Re-download</button><button class="secondary" onclick="regenerateRecord(${i})">${r.status==='EXPIRED'?'Renew':'Regenerate'}</button></div></div>`).join('')||'<div class="muted">No generated IDs found.</div>';window.__recordResults=data||[]}
+async function loadRecord(i){const r=window.__recordResults[i];document.getElementById('clientSelect').value=r.workplace_code;document.getElementById('riderNumber').value=r.rider_number;document.getElementById('riderName').value=r.rider_name;activeRecord=r;updatePreview();document.getElementById('regenerateBtn').disabled=usage.remaining_count===0;setMessage(`Loaded ${r.full_id_number}. Re-downloading does not use another weekly slot.`,'success');await logAction('VIEWED');await loadAudit()}
+async function regenerateRecord(i){await loadRecord(i);await claimGeneration(window.__recordResults[i].status==='EXPIRED'?'RENEWAL':'REGENERATION')}
+async function loadAudit(){if(!supabaseClient)return;const{data,error}=await supabaseClient.rpc('get_id_audit_log',{p_limit:100});const box=document.getElementById('audit');if(error){box.innerHTML='<div class="muted">Could not load audit log.</div>';return}box.innerHTML=(data||[]).map(a=>`<div class="audit-row"><strong>${escapeHtml(a.action)}</strong> · ${escapeHtml(a.full_id_number||'—')} · ${escapeHtml(a.rider_name||'—')}<br><span class="muted">${fmtDate(a.created_at)} · ${escapeHtml(a.workplace_name||'—')}</span></div>`).join('')||'<div class="muted">No audit activity yet.</div>'}
+updatePreview();updateLimitDisplay();searchRecords();loadAudit();
 </script>
 </body>
 </html>
