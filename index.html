@@ -6,28 +6,14 @@
 <title>Rider ID Generator</title>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/api/config"></script>
 <style>
-:root{color-scheme:dark;font-family:Inter,Arial,sans-serif;--bg:#0d0f12;--panel:#171a1f;--panel2:#111419;--line:#30343b;--gold:#d4af37;--text:#f6f7f9;--muted:#9ca3af;--danger:#b91c1c;--ok:#15803d;--warn:#a16207}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text)}button,input,select{font:inherit}.hidden{display:none!important}.app-shell{max-width:1450px;margin:0 auto;padding:20px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}.brand h2{margin:0;font-size:22px}.brand .muted{margin-top:3px}.userbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.role-badge,.status{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#2a2e35;font-size:11px;font-weight:800}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab-btn{width:auto;padding:10px 16px;border-radius:8px;background:#20242a;color:#ddd;border:1px solid var(--line);cursor:pointer;font-weight:700}.tab-btn.active{background:var(--gold);color:#111;border-color:var(--gold)}.tab-page{display:none}.tab-page.active{display:block}.layout{display:grid;grid-template-columns:370px minmax(720px,1fr);gap:20px;align-items:start}.panel{background:var(--panel);padding:18px;border:1px solid #23272e;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25)}h3,h4{margin:0 0 12px}.muted{color:var(--muted);font-size:12px;line-height:1.45}label{display:block;margin:12px 0 6px;font-weight:700;font-size:13px}input,select{width:100%;padding:10px;border-radius:7px;border:1px solid #3b4049;background:#0e1115;color:#fff}button{padding:10px 12px;border-radius:7px;border:0;cursor:pointer;font-weight:800}button.primary{background:var(--gold);color:#111}button.secondary{background:#30343b;color:#fff}button.danger{background:#7f1d1d;color:#fff}button.ghost{background:transparent;color:#ddd;border:1px solid #3b4049}button:disabled{opacity:.42;cursor:not-allowed}.btn-block{width:100%;margin-top:9px}.allowance{background:linear-gradient(180deg,#171b21,#111419);border:1px solid #3a3f48;border-radius:12px;padding:14px;margin-bottom:14px}.allowance.locked{border-color:#7f1d1d}.allowance-head{display:flex;justify-content:space-between;align-items:start;gap:10px}.allowance-title{font-size:11px;color:#aaa;font-weight:800;letter-spacing:.08em}.allowance-big{font-size:25px;font-weight:900;margin-top:3px}.allowance-rem{font-size:12px;color:#bbb;text-align:right}.progress{height:8px;background:#292e35;border-radius:999px;overflow:hidden;margin:11px 0}.progress>div{height:100%;background:var(--gold);width:0}.countdown{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;margin-top:4px}.locked-label{color:#fca5a5;font-weight:900;margin-top:7px}.message{min-height:20px;margin-top:10px;font-size:13px;line-height:1.4}.message.error{color:#fca5a5}.message.success{color:#86efac}.preview-stage{overflow:auto}.card-wrapper{display:flex;flex-direction:column;gap:20px;min-width:1011px}.id-card{position:relative;width:1011px;height:638px;background:#fff;overflow:hidden}.id-card img.bg{width:100%;height:100%;display:block}.rider-id{position:absolute;left:92px;top:330px;font-size:32px;font-weight:800;color:#111;letter-spacing:1px}.name{position:absolute;left:92px;top:395px;width:820px;font-size:58px;line-height:1.05;font-weight:800;color:#000;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.workplace{position:absolute;left:92px;top:486px;font-size:31px;font-weight:700;color:#a88718}.history-page,.audit-page{max-width:1180px;margin:0 auto}.summary-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px;margin:14px 0}.summary-card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:12px}.summary-card strong{display:block;font-size:22px;margin-bottom:3px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:8px;align-items:end;margin:14px 0}.audit-filters{grid-template-columns:2fr 1fr 1fr auto auto}.records{display:grid;gap:9px}.record{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:12px}.record-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.record-title{font-weight:900}.record-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.record-actions button{padding:7px 9px;font-size:12px}.status.ACTIVE{background:#16351f;color:#86efac}.status.EXPIRING_SOON{background:#4b3511;color:#fde68a}.status.EXPIRED{background:#422020;color:#fca5a5}.status.PAUSED{background:#31344b;color:#c7d2fe}.status.REVOKED{background:#4a1d1d;color:#fecaca}.status.RENEWED{background:#183a3a;color:#99f6e4}.audit-row{padding:10px 0;border-bottom:1px solid #2d3138}.audit-row:last-child{border-bottom:0}.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}.login-card{width:min(430px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}.login-card h2{margin:0 0 6px}.login-card button{width:100%;margin-top:14px}.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.modal{width:min(560px,100%);background:#171a1f;border:1px solid #3b4049;border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.55)}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}.modal-actions button{width:auto}.history-list{display:grid;gap:8px;max-height:60vh;overflow:auto;margin-top:10px}.history-item{border:1px solid var(--line);background:#111419;border-radius:8px;padding:10px}.history-item .record-actions{margin-top:7px}.small-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}@media(max-width:1100px){.layout{grid-template-columns:1fr}.preview-stage{max-width:100%}.summary-grid{grid-template-columns:repeat(3,1fr)}.filters,.audit-filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.topbar{align-items:flex-start;flex-direction:column}.summary-grid{grid-template-columns:1fr 1fr}.filters,.audit-filters{grid-template-columns:1fr}.app-shell{padding:12px}}
+:root{color-scheme:dark;font-family:Inter,Arial,sans-serif;--bg:#0d0f12;--panel:#171a1f;--panel2:#111419;--line:#30343b;--gold:#d4af37;--text:#f6f7f9;--muted:#9ca3af;--danger:#b91c1c;--ok:#15803d;--warn:#a16207}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text)}button,input,select{font:inherit}.hidden{display:none!important}.app-shell{max-width:1450px;margin:0 auto;padding:20px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}.brand h2{margin:0;font-size:22px}.brand .muted{margin-top:3px}.status{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#2a2e35;font-size:11px;font-weight:800}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab-btn{width:auto;padding:10px 16px;border-radius:8px;background:#20242a;color:#ddd;border:1px solid var(--line);cursor:pointer;font-weight:700}.tab-btn.active{background:var(--gold);color:#111;border-color:var(--gold)}.tab-page{display:none}.tab-page.active{display:block}.layout{display:grid;grid-template-columns:370px minmax(720px,1fr);gap:20px;align-items:start}.panel{background:var(--panel);padding:18px;border:1px solid #23272e;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25)}h3,h4{margin:0 0 12px}.muted{color:var(--muted);font-size:12px;line-height:1.45}label{display:block;margin:12px 0 6px;font-weight:700;font-size:13px}input,select{width:100%;padding:10px;border-radius:7px;border:1px solid #3b4049;background:#0e1115;color:#fff}button{padding:10px 12px;border-radius:7px;border:0;cursor:pointer;font-weight:800}button.primary{background:var(--gold);color:#111}button.secondary{background:#30343b;color:#fff}button.danger{background:#7f1d1d;color:#fff}button.ghost{background:transparent;color:#ddd;border:1px solid #3b4049}button:disabled{opacity:.42;cursor:not-allowed}.btn-block{width:100%;margin-top:9px}.allowance{background:linear-gradient(180deg,#171b21,#111419);border:1px solid #3a3f48;border-radius:12px;padding:14px;margin-bottom:14px}.allowance.locked{border-color:#7f1d1d}.allowance-head{display:flex;justify-content:space-between;align-items:start;gap:10px}.allowance-title{font-size:11px;color:#aaa;font-weight:800;letter-spacing:.08em}.allowance-big{font-size:25px;font-weight:900;margin-top:3px}.allowance-rem{font-size:12px;color:#bbb;text-align:right}.progress{height:8px;background:#292e35;border-radius:999px;overflow:hidden;margin:11px 0}.progress>div{height:100%;background:var(--gold);width:0}.countdown{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;margin-top:4px}.locked-label{color:#fca5a5;font-weight:900;margin-top:7px}.message{min-height:20px;margin-top:10px;font-size:13px;line-height:1.4}.message.error{color:#fca5a5}.message.success{color:#86efac}.preview-stage{overflow:auto}.card-wrapper{display:flex;flex-direction:column;gap:20px;min-width:1011px}.id-card{position:relative;width:1011px;height:638px;background:#fff;overflow:hidden}.id-card img.bg{width:100%;height:100%;display:block}.rider-id{position:absolute;left:92px;top:330px;font-size:32px;font-weight:800;color:#111;letter-spacing:1px}.name{position:absolute;left:92px;top:395px;width:820px;font-size:58px;line-height:1.05;font-weight:800;color:#000;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.workplace{position:absolute;left:92px;top:486px;font-size:31px;font-weight:700;color:#a88718}.history-page,.audit-page{max-width:1180px;margin:0 auto}.summary-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px;margin:14px 0}.summary-card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:12px}.summary-card strong{display:block;font-size:22px;margin-bottom:3px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:8px;align-items:end;margin:14px 0}.audit-filters{grid-template-columns:2fr 1fr 1fr auto auto}.records{display:grid;gap:9px}.record{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:12px}.record-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.record-title{font-weight:900}.record-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.record-actions button{padding:7px 9px;font-size:12px}.status.ACTIVE{background:#16351f;color:#86efac}.status.EXPIRING_SOON{background:#4b3511;color:#fde68a}.status.EXPIRED{background:#422020;color:#fca5a5}.status.PAUSED{background:#31344b;color:#c7d2fe}.status.REVOKED{background:#4a1d1d;color:#fecaca}.status.RENEWED{background:#183a3a;color:#99f6e4}.audit-row{padding:10px 0;border-bottom:1px solid #2d3138}.audit-row:last-child{border-bottom:0}.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.modal{width:min(560px,100%);background:#171a1f;border:1px solid #3b4049;border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.55)}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}.modal-actions button{width:auto}.history-list{display:grid;gap:8px;max-height:60vh;overflow:auto;margin-top:10px}.history-item{border:1px solid var(--line);background:#111419;border-radius:8px;padding:10px}.history-item .record-actions{margin-top:7px}.small-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}@media(max-width:1100px){.layout{grid-template-columns:1fr}.preview-stage{max-width:100%}.summary-grid{grid-template-columns:repeat(3,1fr)}.filters,.audit-filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.topbar{align-items:flex-start;flex-direction:column}.summary-grid{grid-template-columns:1fr 1fr}.filters,.audit-filters{grid-template-columns:1fr}.app-shell{padding:12px}}
 </style>
 </head>
 <body>
-<div id="loginView" class="login-wrap hidden">
-  <div class="login-card">
-    <h2>Rider ID Generator</h2>
-    <p class="muted">Sign in with your authorized account.</p>
-    <label>Email</label><input id="loginEmail" type="email" autocomplete="username">
-    <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
-    <button class="primary" onclick="login()">Sign in</button>
-    <div id="loginMessage" class="message"></div>
-  </div>
-</div>
-
-<div id="appView" class="app-shell hidden">
+<div id="appView" class="app-shell">
   <div class="topbar">
     <div class="brand"><h2>Rider ID Generator</h2><div class="muted">Controlled ID issuance and history</div></div>
-    <div class="userbox"><span id="userName"></span><span id="userRole" class="role-badge"></span><button class="ghost" onclick="logout()">Sign out</button></div>
   </div>
   <div class="tabs" role="tablist">
     <button class="tab-btn active" id="tabGenerator" onclick="switchTab('generator')">Generator</button>
@@ -50,7 +36,7 @@
         <button class="primary btn-block generation-btn" onclick="downloadPNG('frontID','Front')">Download Front (PNG)</button>
         <button class="secondary btn-block generation-btn" onclick="downloadPNG('backID','Back')">Download Back (PNG)</button>
         <button class="secondary btn-block generation-btn" onclick="downloadPDF()">Download PDF (Front + Back)</button>
-        <button class="secondary btn-block admin-only" id="regenerateBtn" onclick="confirmRegenerateCurrent()" disabled>Regenerate / Renew Current ID</button>
+        <button class="secondary btn-block" id="regenerateBtn" onclick="confirmRegenerateCurrent()" disabled>Regenerate / Renew Current ID</button>
         <button class="ghost btn-block" onclick="nextRider()">Next Rider</button>
         <div id="message" class="message" aria-live="polite"></div>
       </div>
@@ -99,60 +85,28 @@
 
 <script>
 const WEEKLY_LIMIT=15;
-let profile=null,usage={used_count:0,remaining_count:15,reset_at:null},summary={},activeRecord=null,resetTimer=null;
+let usage={used_count:0,remaining_count:15,reset_at:null},summary={},activeRecord=null,resetTimer=null;
 let recordResults=[],auditResults=[];
-const supabaseUrl=window.__SUPABASE_CONFIG__?.url?.trim();
-const supabaseKey=window.__SUPABASE_CONFIG__?.key?.trim();
-const supabaseClient=supabaseUrl&&supabaseKey?window.supabase.createClient(supabaseUrl,supabaseKey):null;
 
 function escapeHtml(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function fmtDate(v){if(!v)return '—';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'}).format(new Date(v))}
 function fmtDateOnly(v){if(!v)return '—';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium'}).format(new Date(v+'T12:00:00+03:00'))}
 function setMessage(text,type=''){const e=document.getElementById('message');e.textContent=text;e.className=`message ${type}`.trim()}
-function setLoginMessage(text,type='error'){const e=document.getElementById('loginMessage');e.textContent=text;e.className=`message ${type}`}
-function cleanRiderNumber(v){return v.trim().replace(/[^a-zA-Z0-9-]/g,'').toUpperCase()}
-function getClientDetails(){const code=document.getElementById('clientSelect').value;return code==='EG'?{code:'EG',name:'EasyGas'}:{code:'MG',name:'M-Gas'}}
-function safeFilenamePart(v,fallback){const c=String(v||'').trim().replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'');return c||fallback}
-function roleIs(...roles){return !!profile&&roles.includes(profile.role)}
-
 async function api(action,payload={}){
-  const {data:{session}}=await supabaseClient.auth.getSession();
-  if(!session?.access_token) throw new Error('Please sign in again.');
-  const res=await fetch('/api/id',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({action,...payload})});
+  const res=await fetch('/api/id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})});
   const data=await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error||'Request failed.');
+  if(!res.ok)throw new Error(data.error||'Request failed.');
   return data;
 }
-
-async function login(){
-  if(!supabaseClient)return setLoginMessage('Supabase is not configured.');
-  const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;
-  setLoginMessage('Signing in…','');
-  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
-  if(error)return setLoginMessage(error.message);
-  await initializeApp();
-}
-async function logout(){await supabaseClient.auth.signOut();location.reload()}
-
 async function initializeApp(){
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(!session){document.getElementById('loginView').classList.remove('hidden');document.getElementById('appView').classList.add('hidden');return}
-    const data=await api('bootstrap');profile=data.profile;usage=data.usage;summary=data.summary||{};
-    document.getElementById('loginView').classList.add('hidden');document.getElementById('appView').classList.remove('hidden');
-    document.getElementById('userName').textContent=profile.display_name||profile.email;document.getElementById('userRole').textContent=profile.role;
-    applyPermissions();setLimitDisplay(usage);setSummary(summary);updatePreview();
-    if(roleIs('VIEWER')) switchTab('history'); else switchTab('generator');
-  }catch(e){console.error(e);await supabaseClient.auth.signOut();document.getElementById('loginView').classList.remove('hidden');setLoginMessage(e.message)}
-}
-function applyPermissions(){
-  document.querySelectorAll('.admin-only').forEach(e=>e.classList.toggle('hidden',!roleIs('ADMIN')));
-  document.getElementById('tabAudit').classList.toggle('hidden',!roleIs('ADMIN'));
-  document.getElementById('tabGenerator').classList.toggle('hidden',roleIs('VIEWER'));
-  if(roleIs('VIEWER')) document.querySelectorAll('.generation-btn').forEach(b=>b.disabled=true);
+    const data=await api('bootstrap');
+    usage=data.usage||usage;summary=data.summary||{};
+    renderAllowance();renderSummary();switchTab('generator');
+  }catch(e){console.error(e);setMessage(e.message,'error')}
 }
 function switchTab(tab,force=false){
-  if(tab==='audit'&&!roleIs('ADMIN'))return;if(tab==='generator'&&roleIs('VIEWER')&&!force)return;
+
   const pages={generator:'pageGenerator',history:'pageHistory',audit:'pageAudit'},buttons={generator:'tabGenerator',history:'tabHistory',audit:'tabAudit'};
   Object.values(pages).forEach(id=>document.getElementById(id).classList.remove('active'));Object.values(buttons).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(pages[tab]).classList.add('active');document.getElementById(buttons[tab]).classList.add('active');
@@ -172,9 +126,9 @@ function updateGenerationButtons(){
   document.querySelectorAll('.generation-btn').forEach(b=>{
     // Existing valid records may always be re-downloaded, even at 15/15.
     // A Viewer may download only after loading an existing record.
-    b.disabled=blockedStatus||(!activeRecord&&(locked||roleIs('VIEWER')));
+    b.disabled=blockedStatus||(!activeRecord&&locked);
   });
-  const regen=document.getElementById('regenerateBtn');regen.disabled=locked||!activeRecord||!roleIs('ADMIN');
+  const regen=document.getElementById('regenerateBtn');regen.disabled=locked||!activeRecord;
 }
 function startCountdown(resetAt){
   usage.reset_at=resetAt;if(resetTimer)clearInterval(resetTimer);
@@ -198,15 +152,15 @@ async function claimGeneration(type='INITIAL',confirmDuplicate=false){
     setMessage(`${type==='RENEWAL'?'Renewed':type==='REGENERATION'?'Regenerated':'Generated'} successfully — Generation ${r.generation_number}, weekly slot ${r.weekly_sequence_number}/15.`,'success');await refreshUsage();await refreshSummary();return true;
   }catch(e){setMessage(e.message,'error');return false}
 }
-async function ensureGeneration(){if(activeRecord)return true;if(roleIs('VIEWER'))return false;return claimGeneration('INITIAL',false)}
+async function ensureGeneration(){if(activeRecord)return true;return claimGeneration('INITIAL',false)}
 
 function showDuplicateModal(r){
-  const admin=roleIs('ADMIN');showModal(`<h3>This rider ID already exists</h3><p><strong>${escapeHtml(r.full_id_number)}</strong><br>${escapeHtml(r.rider_name||'')} · ${escapeHtml(r.workplace_name||'')}</p><p>Status: <span class="status ${escapeHtml(r.current_status)}">${escapeHtml(r.current_status)}</span><br>Current expiry: ${fmtDate(r.existing_expires_at)}</p><p class="muted">Opening the existing ID uses no weekly slot.${admin?' Regenerating it will use 1 slot.':' Only an Admin can regenerate an existing ID.'}</p>`,[
-    {label:'Cancel',cls:'ghost',fn:closeModal},{label:'Open Existing ID',cls:'secondary',fn:async()=>{closeModal();await loadRecordById(r.rider_id)}},...(admin?[{label:'Regenerate Anyway',cls:'primary',fn:async()=>{closeModal();await claimGeneration('INITIAL',true)}}]:[])
+  showModal(`<h3>This rider ID already exists</h3><p><strong>${escapeHtml(r.full_id_number)}</strong><br>${escapeHtml(r.rider_name||'')} · ${escapeHtml(r.workplace_name||'')}</p><p>Status: <span class="status ${escapeHtml(r.current_status)}">${escapeHtml(r.current_status)}</span><br>Current expiry: ${fmtDate(r.existing_expires_at)}</p><p class="muted">Opening the existing ID uses no weekly slot. Regenerating it will use 1 slot.</p>`,[
+    {label:'Cancel',cls:'ghost',fn:closeModal},{label:'Open Existing ID',cls:'secondary',fn:async()=>{closeModal();await loadRecordById(r.rider_id)}},{label:'Regenerate Anyway',cls:'primary',fn:async()=>{closeModal();await claimGeneration('INITIAL',true)}}
   ])
 }
 function confirmRegenerateCurrent(){
-  if(!activeRecord||!roleIs('ADMIN'))return;const expired=['EXPIRED','REVOKED'].includes(activeRecord.status),type=activeRecord.status==='EXPIRED'?'RENEWAL':'REGENERATION';
+  if(!activeRecord)return;const expired=['EXPIRED','REVOKED'].includes(activeRecord.status),type=activeRecord.status==='EXPIRED'?'RENEWAL':'REGENERATION';
   const newExpiry=new Date();newExpiry.setFullYear(newExpiry.getFullYear()+1);
   showModal(`<h3>${type==='RENEWAL'?'Renew':'Regenerate'} ${escapeHtml(activeRecord.full_id_number)}</h3><p>This will consume <strong>1 of the ${usage.remaining_count} remaining weekly slots</strong>.</p><p>Current expiry: ${fmtDate(activeRecord.expires_at)}<br>New expiry: ${fmtDate(newExpiry.toISOString())}</p>`,[
     {label:'Cancel',cls:'ghost',fn:closeModal},{label:type==='RENEWAL'?'Confirm Renewal':'Confirm Regeneration',cls:'primary',fn:async()=>{closeModal();await claimGeneration(type,true)}}
@@ -222,7 +176,7 @@ async function searchRecords(){
   try{const d=await api('search',{query:document.getElementById('searchInput').value.trim(),workplace:document.getElementById('workplaceFilter').value,status:document.getElementById('statusFilter').value,period:document.getElementById('periodFilter').value});recordResults=d.records||[];renderRecords()}catch(e){document.getElementById('records').innerHTML=`<div class="muted">${escapeHtml(e.message)}</div>`}
 }
 function renderRecords(){const box=document.getElementById('records');box.innerHTML=recordResults.map((r,i)=>{
-  const admin=roleIs('ADMIN');let adminButtons='';if(admin){if(r.status==='PAUSED')adminButtons+=`<button class="secondary" onclick="statusAction(${i},'RESUME')">Resume</button>`;else if(r.status!=='REVOKED')adminButtons+=`<button class="secondary" onclick="statusAction(${i},'PAUSE')">Pause</button>`;if(r.status!=='REVOKED')adminButtons+=`<button class="danger" onclick="statusAction(${i},'REVOKE')">Revoke</button>`;adminButtons+=`<button class="secondary" onclick="prepareRegenerate(${i})">${r.status==='EXPIRED'?'Renew':'Regenerate'}</button>`}
+  let adminButtons='';if(r.status==='PAUSED')adminButtons+=`<button class="secondary" onclick="statusAction(${i},'RESUME')">Resume</button>`;else if(r.status!=='REVOKED')adminButtons+=`<button class="secondary" onclick="statusAction(${i},'PAUSE')">Pause</button>`;if(r.status!=='REVOKED')adminButtons+=`<button class="danger" onclick="statusAction(${i},'REVOKE')">Revoke</button>`;adminButtons+=`<button class="secondary" onclick="prepareRegenerate(${i})">${r.status==='EXPIRED'?'Renew':'Regenerate'}</button>`
   return `<div class="record"><div class="record-head"><div><div class="record-title">${escapeHtml(r.full_id_number)} — ${escapeHtml(r.rider_name)}</div><div class="muted">${escapeHtml(r.workplace_name)} · Generation ${r.generation_number} · Issued ${fmtDate(r.generated_at)} · Expires ${fmtDate(r.expires_at)} · ${r.generation_count} generation(s)</div>${r.status_reason?`<div class="muted">Reason: ${escapeHtml(r.status_reason)}</div>`:''}</div><span class="status ${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></div><div class="record-actions"><button class="secondary" onclick="loadRecord(${i})">Load / Re-download</button><button class="ghost" onclick="showGenerationHistory(${i})">Generation History</button>${adminButtons}</div></div>`
 }).join('')||'<div class="muted">No generated IDs found.</div>'}
 async function loadRecord(i){const r=recordResults[i];await loadRecordObject(r)}
@@ -232,19 +186,19 @@ function prepareRegenerate(i){const r=recordResults[i];loadRecordObject(r).then(
 async function statusAction(i,action){const r=recordResults[i];if(action==='RESUME'){return performStatus(r,action,null)}showModal(`<h3>${action==='PAUSE'?'Pause':'Revoke'} ${escapeHtml(r.full_id_number)}</h3><p class="muted">This action uses no weekly generation slot, but the reason is permanently recorded in the audit log.</p><label>Reason</label><input id="statusReason" placeholder="Required reason">`,[{label:'Cancel',cls:'ghost',fn:closeModal},{label:action==='PAUSE'?'Pause ID':'Revoke ID',cls:action==='PAUSE'?'secondary':'danger',fn:async()=>{const reason=document.getElementById('statusReason').value.trim();if(!reason)return;closeModal();await performStatus(r,action,reason)}}])}
 async function performStatus(r,action,reason){try{await api('status',{rider_id:r.rider_id,status_action:action,reason});await searchRecords();await refreshSummary();if(activeRecord?.rider_id===r.rider_id)activeRecord=null}catch(e){alert(e.message)}}
 
-async function showGenerationHistory(i){const r=recordResults[i];try{const d=await api('history',{rider_id:r.rider_id});const list=(d.generations||[]).map((g,j)=>`<div class="history-item"><div class="record-head"><div><strong>Generation ${g.generation_number} · ${escapeHtml(g.generation_type)}</strong><div class="muted">Issued ${fmtDate(g.generated_at)} · Expires ${fmtDate(g.expires_at)} · Weekly slot ${g.weekly_sequence_number}/15${g.created_by_email?` · By ${escapeHtml(g.created_by_email)}`:''}</div></div><span class="status ${escapeHtml(g.generation_status)}">${escapeHtml(g.generation_status)}</span></div><div class="record-actions"><button class="secondary" onclick='loadHistoricalGeneration(${JSON.stringify(g).replace(/'/g,"&#39;")})'>Load / Re-download</button></div></div>`).join('');showModal(`<h3>${escapeHtml(r.full_id_number)} — Generation History</h3><div class="history-list">${list||'<div class="muted">No generations found.</div>'}</div>`,[{label:'Close',cls:'ghost',fn:closeModal}])}catch(e){alert(e.message)}}
+async function showGenerationHistory(i){const r=recordResults[i];try{const d=await api('history',{rider_id:r.rider_id});const list=(d.generations||[]).map((g,j)=>`<div class="history-item"><div class="record-head"><div><strong>Generation ${g.generation_number} · ${escapeHtml(g.generation_type)}</strong><div class="muted">Issued ${fmtDate(g.generated_at)} · Expires ${fmtDate(g.expires_at)} · Weekly slot ${g.weekly_sequence_number}/15</div></div><span class="status ${escapeHtml(g.generation_status)}">${escapeHtml(g.generation_status)}</span></div><div class="record-actions"><button class="secondary" onclick='loadHistoricalGeneration(${JSON.stringify(g).replace(/'/g,"&#39;")})'>Load / Re-download</button></div></div>`).join('');showModal(`<h3>${escapeHtml(r.full_id_number)} — Generation History</h3><div class="history-list">${list||'<div class="muted">No generations found.</div>'}</div>`,[{label:'Close',cls:'ghost',fn:closeModal}])}catch(e){alert(e.message)}}
 function loadHistoricalGeneration(g){closeModal();switchTab('generator',true);document.getElementById('clientSelect').value=g.workplace_code;document.getElementById('riderNumber').value=g.rider_number;document.getElementById('riderName').value=g.rider_name;activeRecord={rider_id:recordResults.find(r=>r.full_id_number===g.full_id_number)?.rider_id,generation_id:g.generation_id,full_id_number:g.full_id_number,rider_name:g.rider_name,rider_number:g.rider_number,workplace_code:g.workplace_code,workplace_name:g.workplace_name,generated_at:g.generated_at,expires_at:g.expires_at,status:g.generation_status,generation_number:g.generation_number};updatePreview();updateGenerationButtons();setMessage(`Loaded Generation ${g.generation_number} for re-download. No weekly slot used.`,'success')}
 
-async function loadAudit(){if(!roleIs('ADMIN'))return;try{const d=await api('audit',{query:document.getElementById('auditSearch').value.trim(),audit_action:document.getElementById('auditAction').value,period:document.getElementById('auditPeriod').value,limit:1000});auditResults=d.audit||[];document.getElementById('audit').innerHTML=auditResults.map(a=>`<div class="audit-row"><strong>${escapeHtml(a.action)}</strong> · ${escapeHtml(a.full_id_number||'—')} · ${escapeHtml(a.rider_name||'—')}${a.generation_number?` · Generation ${a.generation_number}`:''}<br><span class="muted">${fmtDate(a.created_at)} · ${escapeHtml(a.workplace_name||'—')} · ${escapeHtml(a.actor_email||'System')} (${escapeHtml(a.actor_role||'—')})${a.details?.weekly_slot?` · Weekly slot ${escapeHtml(a.details.weekly_slot)}/15`:''}${a.details?.reason?` · Reason: ${escapeHtml(a.details.reason)}`:''}</span></div>`).join('')||'<div class="muted">No audit activity found.</div>'}catch(e){document.getElementById('audit').innerHTML=`<div class="muted">${escapeHtml(e.message)}</div>`}}
+async function loadAudit(){try{const d=await api('audit',{query:document.getElementById('auditSearch').value.trim(),audit_action:document.getElementById('auditAction').value,period:document.getElementById('auditPeriod').value,limit:1000});auditResults=d.audit||[];document.getElementById('audit').innerHTML=auditResults.map(a=>`<div class="audit-row"><strong>${escapeHtml(a.action)}</strong> · ${escapeHtml(a.full_id_number||'—')} · ${escapeHtml(a.rider_name||'—')}${a.generation_number?` · Generation ${a.generation_number}`:''}<br><span class="muted">${fmtDate(a.created_at)} · ${escapeHtml(a.workplace_name||'—')}${a.details?.weekly_slot?` · Weekly slot ${escapeHtml(a.details.weekly_slot)}/15`:''}${a.details?.reason?` · Reason: ${escapeHtml(a.details.reason)}`:''}</span></div>`).join('')||'<div class="muted">No audit activity found.</div>'}catch(e){document.getElementById('audit').innerHTML=`<div class="muted">${escapeHtml(e.message)}</div>`}}
 function csvDownload(filename,rows){if(!rows.length)return alert('Nothing to export.');const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;const csv=rows.map(r=>r.map(esc).join(',')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href)}
 function exportHistoryCSV(){csvDownload('generated-id-history.csv',[['Full ID','Rider Number','Rider Name','Workplace','Status','Generation','Generation Type','Issued','Expires','Generation Count'],...recordResults.map(r=>[r.full_id_number,r.rider_number,r.rider_name,r.workplace_name,r.status,r.generation_number,r.generation_type,fmtDate(r.generated_at),fmtDate(r.expires_at),r.generation_count])])}
-function exportAuditCSV(){csvDownload('id-audit-log.csv',[['Date/Time','Action','Full ID','Rider Name','Workplace','Generation','User','Role','Details'],...auditResults.map(a=>[fmtDate(a.created_at),a.action,a.full_id_number,a.rider_name,a.workplace_name,a.generation_number,a.actor_email,a.actor_role,JSON.stringify(a.details||{})])])}
+function exportAuditCSV(){csvDownload('id-audit-log.csv',[['Date/Time','Action','Full ID','Rider Name','Workplace','Generation','Details'],...auditResults.map(a=>[fmtDate(a.created_at),a.action,a.full_id_number,a.rider_name,a.workplace_name,a.generation_number,JSON.stringify(a.details||{})])])}
 
 function showModal(html,actions=[]){document.getElementById('modalBody').innerHTML=html;const box=document.getElementById('modalActions');box.innerHTML='';actions.forEach(a=>{const b=document.createElement('button');b.className=a.cls||'secondary';b.textContent=a.label;b.onclick=a.fn;box.appendChild(b)});document.getElementById('modalBackdrop').classList.remove('hidden')}
 function closeModal(){document.getElementById('modalBackdrop').classList.add('hidden');document.getElementById('modalBody').innerHTML='';document.getElementById('modalActions').innerHTML=''}
 document.getElementById('modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
 
-(async()=>{if(!supabaseClient){document.getElementById('loginView').classList.remove('hidden');setLoginMessage('Supabase configuration is missing.');return}await initializeApp()})();
+(async()=>{await initializeApp()})();
 </script>
 </body>
 </html>
